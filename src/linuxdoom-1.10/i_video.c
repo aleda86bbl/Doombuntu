@@ -34,6 +34,7 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include <X11/keysym.h>
 
 #include <X11/extensions/XShm.h>
+#include <SDL3/SDL.h>
 // Had to dig up XShm.c for this one.
 // It is in the libXext, but not in the XFree86 headers.
 #ifdef LINUX
@@ -692,6 +693,12 @@ void grabsharedmemory(int size)
 void I_InitGraphics(void)
 {
 
+	// SDL3 stuff added in.
+
+	/*if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK))
+	{
+        I_Error("SDL_Init failed: %s", SDL_GetError());
+	}*/
     char*		displayname;
     char*		d;
     int			n;
