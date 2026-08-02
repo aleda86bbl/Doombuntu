@@ -59,7 +59,14 @@ int XShmGetEventBase( Display* dpy ); // problems with g++?
 #include "doomdef.h"
 
 #define POINTER_WARP_COUNTDOWN	1
-
+#ifdef USE_SDL
+SDL_Window* window = 0;
+SDL_Renderer* renderer = 0;
+uint8_t *cpu_pixels = 0;
+SDL_Surface *surface =0;
+SDL_Palette* palette = 0;
+SDL_Texture* texture = 0;
+#else
 Display*	X_display=0;
 Window		X_mainWindow;
 Colormap	X_cmap;
@@ -69,6 +76,7 @@ XEvent		X_event;
 int		X_screen;
 XVisualInfo	X_visualinfo;
 XImage*		image;
+#endif
 int		X_width;
 int		X_height;
 
@@ -95,6 +103,56 @@ static int	multiply=1;
 //  Translates the key currently in X_event
 //
 
+#ifdef USE_SDL
+int sdlTranslateKey(SDL_Scancode scanCode)
+{
+	int rc = 0;
+	switch(scanCode)
+	{
+		case SDL_SCANCODE_LEFT: rc = KEY_LEFTARROW; break;
+		case SDL_SCANCODE_RIGHT: rc = KEY_RIGHTARROW; break;
+		case SDL_SCANCODE_DOWN: rc = KEY_DOWNARROW; break;
+		case SDL_SCANCODE_UP: rc = KEY_UPARROW; break;
+		case SDL_SCANCODE_ESCAPE: rc = KEY_ESCAPE; break;
+		case SDL_SCANCODE_RETURN: rc = KEY_ENTER; break;
+		case SDL_SCANCODE_TAB: rc = KEY_TAB; break;
+		case SDL_SCANCODE_F1: rc = KEY_F1; break;
+		case SDL_SCANCODE_F2: rc = KEY_F2; break;
+		case SDL_SCANCODE_F3: rc = KEY_F3; break;
+		case SDL_SCANCODE_F4: rc = KEY_F4; break;
+		case SDL_SCANCODE_F5: rc = KEY_F5; break;
+		case SDL_SCANCODE_F6: rc = KEY_F6; break;
+		case SDL_SCANCODE_F7: rc = KEY_F7; break;
+		case SDL_SCANCODE_F8: rc = KEY_F8; break;
+		case SDL_SCANCODE_F9: rc = KEY_F9; break;
+		case SDL_SCANCODE_F10: rc = KEY_F10; break;
+		case SDL_SCANCODE_F11: rc = KEY_F11; break;
+		case SDL_SCANCODE_F12: rc = KEY_F12; break;
+		case SDL_SCANCODE_BACKSPACE:
+		case SDL_SCANCODE_DELETE: rc = KEY_BACKSPACE; break;
+		case SDL_SCANCODE_PAUSE: rc = KEY_PAUSE; break;
+		case SDL_SCANCODE_KP_EQUALS:
+		case SDL_SCANCODE_EQUALS: rc = KEY_EQUALS; break;
+		case SDL_SCANCODE_KP_MINUS:
+		case SDL_SCANCODE_MINUS: rc = KEY_MINUS; break;
+		case SDL_SCANCODE_LSHIFT:
+		case SDL_SCANCODE_RSHIFT: rc = KEY_RSHIFT; break;
+		case SDL_SCANCODE_LCTRL:
+		case SDL_SCANCODE_RCTRL: rc = KEY_RCTRL; break;
+		case SDL_SCANCODE_LALT:
+		case SDL_SCANCODE_RALT:
+		case SDL_SCANCODE_LGUI:
+		case SDL_SCANCODE_RGUI: rc = KEY_RALT; break;
+		default:
+			if (rc >= SDL_SCANCODE_SPACE && rc <= SDL_SCANCODE_GRAVE)
+			    rc = rc - SDL_SCANCODE_SPACE + ' ';
+			if (rc >= 'A' && rc <= 'Z')
+	    		rc = rc - 'A' + 'a';
+			break;
+	}
+	return rc;
+}
+#else
 int xlatekey(void)
 {
 
@@ -159,9 +217,30 @@ int xlatekey(void)
     }
 
     return rc;
-
 }
+#endif
 
+#ifdef USE_SDL
+void I_ShutdownGraphics(void)
+{
+	SDL_DestroyTexture(texture);
+	texture = NULL;
+
+	SDL_DestroySurface(surface);
+	surface = NULL;
+
+	SDL_DestroyPalette(palette);
+	palette = NULL;
+
+	SDL_DestroyRenderer(renderer);
+	renderer = NULL;
+
+	SDL_DestroyWindow(window);
+	window = NULL;
+	
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+#else
 void I_ShutdownGraphics(void)
 {
   // Detach from X server
@@ -175,6 +254,7 @@ void I_ShutdownGraphics(void)
   // Paranoia.
   image->data = NULL;
 }
+#endif
 
 
 
@@ -192,6 +272,82 @@ static int	lastmousey = 0;
 boolean		mousemoved = false;
 boolean		shmFinished;
 
+#ifdef USE_SDL
+void I_HandleEvent(const SDL_Event* sdlEvent)
+{
+	event_t event = {0};
+	switch (sdlEvent->type)
+	{
+		case SDL_EVENT_KEY_DOWN:
+			event.type = ev_keydown;
+			event.data1 = sdlTranslateKey(sdlEvent->key.scancode);
+			D_PostEvent(&event);
+			break;
+		case SDL_EVENT_KEY_UP:
+			event.type = ev_keyup;
+			event.data1 = sdlTranslateKey(sdlEvent->key.scancode);
+			D_PostEvent(&event);
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			event.type = ev_mouse;
+			event.data1 = 
+				(sdlEvent->button.down & Button1Mask) // or use SDL_BUTTON_LMASK
+				|  (sdlEvent->button.down & Button2Mask ? 2 : 0) // or SDL_BUTTON_MMASK
+				|  (sdlEvent->button.down & Button3Mask ? 4 : 0) // or SDL_BUTTON_RMASK
+				|  (sdlEvent->button.button == SDL_BUTTON_LEFT)
+				|  (sdlEvent->button.button == SDL_BUTTON_MIDDLE ? 2 : 0)
+				|  (sdlEvent->button.button == SDL_BUTTON_RIGHT ? 4 : 0);
+			event.data2 = event.data3 = 0;
+			D_PostEvent(&event);
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_UP:
+			event.type = ev_mouse;
+			event.data1 = 
+				(sdlEvent->button.down & Button1Mask)
+				|	(sdlEvent->button.down & Button2Mask ? 2 : 0)
+				|   (sdlEvent->button.down & Button3Mask ? 4 : 0);
+			event.data1 =
+			    event.data1
+	    		^ (sdlEvent->button.button == SDL_BUTTON_LEFT ? 1 : 0)
+	    		^ (sdlEvent->button.button == SDL_BUTTON_MIDDLE ? 2 : 0)
+	    		^ (sdlEvent->button.button == SDL_BUTTON_RIGHT ? 4 : 0);
+			event.data2 = event.data3 = 0;
+			D_PostEvent(&event);
+			break;
+      	case SDL_EVENT_MOUSE_MOTION:
+			event.type = ev_mouse;
+			event.data1 =
+				(sdlEvent->motion.state & Button1Mask)
+				| (sdlEvent->motion.state & Button2Mask ? 2 : 0)
+				| (sdlEvent->motion.state & Button3Mask ? 4 : 0);
+			event.data2 = ((int) sdlEvent->motion.x - lastmousex) << 2;
+			event.data3 = (lastmousey - (int) sdlEvent->motion.y) << 2;
+
+			if (event.data2 || event.data3)
+			{
+				lastmousex = (int) sdlEvent->motion.x;
+				lastmousey = (int) sdlEvent->motion.y;
+				if ((int) sdlEvent->motion.x != X_width/2 &&
+					(int) sdlEvent->motion.y != X_height/2)
+				{
+					D_PostEvent(&event);
+					mousemoved = false;
+				} 
+				else
+				{
+					mousemoved = true;
+				}
+			}
+			break;
+		case SDL_EVENT_QUIT:
+		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+			I_Quit();
+			break;
+		default:
+			break;
+	}
+}
+#else
 void I_GetEvent(void)
 {
 
@@ -278,7 +434,7 @@ void I_GetEvent(void)
     }
 
 }
-
+#endif
 Cursor
 createnullcursor
 ( Display*	display,
@@ -307,9 +463,29 @@ createnullcursor
 //
 // I_StartTic
 //
+#ifdef USE_SDL
 void I_StartTic (void)
 {
+	if (!window)
+		return;
 
+	SDL_Event sdlEvent;
+	while(SDL_PollEvent(&sdlEvent))
+		I_HandleEvent(&sdlEvent);
+
+	if (grabMouse)
+	{
+		if (!--doPointerWarp)
+		{
+			SDL_WarpMouseInWindow(window, X_width/2, X_height/2);
+		}
+	}
+
+	mousemoved = False;
+}
+#else
+void I_StartTic (void)
+{
     if (!X_display)
 	return;
 
@@ -337,6 +513,7 @@ void I_StartTic (void)
     mousemoved = false;
 
 }
+#endif
 
 
 //
@@ -347,6 +524,52 @@ void I_UpdateNoBlit (void)
     // what is this?
 }
 
+#ifdef USE_SDL
+void I_FinishUpdate (void)
+{
+
+    static int	lasttic;
+
+	if (devparm)
+	{
+		int now = I_GetTime();
+		int tics = now -lasttic;
+		int i;
+
+		lasttic = now;
+		if (tics > 20)
+			tics = 20;
+		if (tics < 0)
+			tics = 0;
+
+		for (i=0 ; i<tics*2 ; i+=2)
+			screens[0][(SCREENHEIGHT - 1)* SCREENWIDTH + i] = 0xff;
+		for ( ; i<20*2 ; i+=2)
+			screens[0][(SCREENHEIGHT - 1)* SCREENWIDTH + i] = 0x0;
+	}
+    
+	if (!SDL_UpdateTexture(
+		texture,
+		NULL,
+		surface->pixels,
+		surface->pitch))
+	{
+		I_Error("SDL_UpdateTexture failed: %s", SDL_GetError());
+	}
+
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
+
+	if (!SDL_RenderTexture(renderer, texture, NULL, NULL))
+	{
+		I_Error("SDL_RenderTexture failed: %s", SDL_GetError());
+	}
+	if (!SDL_RenderPresent(renderer))
+	{
+		I_Error("SDL_RenderPresent failed: %s", SDL_GetError());
+	}
+}
+#else
 //
 // I_FinishUpdate
 //
@@ -520,6 +743,7 @@ void I_FinishUpdate (void)
     }
 
 }
+#endif
 
 
 //
@@ -530,7 +754,30 @@ void I_ReadScreen (byte* scr)
     memcpy (scr, screens[0], SCREENWIDTH*SCREENHEIGHT);
 }
 
+#ifdef USE_SDL
+static SDL_Color colours[256];
 
+void UploadNewPalette(byte *doomPalette)
+{
+	for (int i = 0; i < 256; ++i)
+	{
+		colours[i].r = gammatable[usegamma][doomPalette[i * 3 + 0]];
+		colours[i].g = gammatable[usegamma][doomPalette[i * 3 + 1]];
+		colours[i].b = gammatable[usegamma][doomPalette[i * 3 + 2]];
+		colours[i].a = SDL_ALPHA_OPAQUE;
+	}
+	if (!SDL_SetPaletteColors(palette, colours, 0, 256))
+		I_Error("SDL_SetPaletteColors failed: %s", SDL_GetError());
+	if (!SDL_SetSurfacePalette(surface, palette))
+		I_Error("SDL_SetSurfacePalette failed: %s", SDL_GetError());
+}
+
+void I_SetPalette (byte* doomPalette)
+{
+    UploadNewPalette(doomPalette);
+}
+
+#else
 //
 // Palette stuff.
 //
@@ -584,8 +831,9 @@ void I_SetPalette (byte* palette)
 {
     UploadNewPalette(X_cmap, palette);
 }
+#endif
 
-
+#ifndef USE_SDL
 //
 // This function is probably redundant,
 //  if XShmDetach works properly.
@@ -689,16 +937,64 @@ void grabsharedmemory(int size)
   fprintf(stderr, "shared memory id=%d, addr=0x%x\n", id,
 	  (int) (image->data));
 }
+#endif
 
+#ifdef USE_SDL
 void I_InitGraphics(void)
 {
-
+	X_width = SCREENWIDTH * multiply;
+    X_height = SCREENHEIGHT * multiply;
 	// SDL3 stuff added in.
-
-	/*if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK))
+	if (!SDL_Init(SDL_INIT_VIDEO))
 	{
-        I_Error("SDL_Init failed: %s", SDL_GetError());
-	}*/
+		I_Error("SDL_Init failed: %s", SDL_GetError());
+	}
+	int windowFlags = 0;
+	if (!SDL_CreateWindowAndRenderer("Doombuntu", X_width, X_height, windowFlags, &window, &renderer))
+	{
+		I_Error("SDL_CreateWindowAndRenderer Error: %s", SDL_GetError());
+	}
+
+	surface = SDL_CreateSurfaceFrom(
+		SCREENWIDTH,
+		SCREENHEIGHT,
+		SDL_PIXELFORMAT_INDEX8,
+		screens[0],
+		SCREENWIDTH
+	);
+
+	if (!surface)
+	{
+		I_Error("SDL_CreateSurfaceFrom Error: %s", SDL_GetError());
+	}
+
+	palette = SDL_CreatePalette(256);
+	if (!palette)
+	{
+		I_Error("SDL_CreatePalette Error: %s", SDL_GetError());
+	}
+
+	texture = SDL_CreateTexture(
+		renderer,
+		SDL_PIXELFORMAT_INDEX8,
+		SDL_TEXTUREACCESS_STREAMING,
+		SCREENWIDTH,
+		SCREENHEIGHT
+	);
+
+	if (!texture)
+	{
+		I_Error("SDL_CreateTexture Error: %s", SDL_GetError());
+	}
+	
+	if (!SDL_SetTexturePalette(texture, palette))
+		I_Error("SDL_SetTexturePalette failed: %s", SDL_GetError());
+	if (!SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST))
+		I_Error("SDL_SetTextureScaleMode failed: %s", SDL_GetError());
+}
+#else
+void I_InitGraphics(void)
+{
     char*		displayname;
     char*		d;
     int			n;
@@ -920,7 +1216,7 @@ void I_InitGraphics(void)
 	screens[0] = (unsigned char *) malloc (SCREENWIDTH * SCREENHEIGHT);
 
 }
-
+#endif
 
 unsigned	exptable[256];
 

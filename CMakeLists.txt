@@ -89,6 +89,7 @@ target_compile_definitions(Doombuntu
     PRIVATE
         NORMALUNIX
         LINUX
+        USE_SDL
 )
 
 target_link_libraries(Doombuntu
