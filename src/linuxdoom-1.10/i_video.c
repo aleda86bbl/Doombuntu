@@ -954,6 +954,8 @@ void I_InitGraphics(void)
 	{
 		I_Error("SDL_CreateWindowAndRenderer Error: %s", SDL_GetError());
 	}
+	bool sdlFullscreen = M_CheckParm("-fullscreen");
+	SDL_SetWindowFullscreen(window, sdlFullscreen);
 
 	surface = SDL_CreateSurfaceFrom(
 		SCREENWIDTH,
