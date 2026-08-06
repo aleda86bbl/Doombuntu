@@ -23,6 +23,10 @@
 #ifndef __F_FINALE__
 #define __F_FINALE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "doomtype.h"
 #include "d_event.h"
@@ -44,7 +48,9 @@ void F_StartFinale (void);
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

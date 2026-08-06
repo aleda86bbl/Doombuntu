@@ -23,6 +23,10 @@
 #ifndef __D_TICCMD__
 #define __D_TICCMD__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 
 #ifdef __GNUG__
@@ -44,7 +48,9 @@ typedef struct
 } ticcmd_t;
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

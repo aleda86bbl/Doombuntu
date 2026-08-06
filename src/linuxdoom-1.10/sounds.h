@@ -23,6 +23,10 @@
 #ifndef __SOUNDS__
 #define __SOUNDS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 //
 // SoundFX struct.
@@ -287,6 +291,10 @@ typedef enum
     sfx_radio,
     NUMSFX
 } sfxenum_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

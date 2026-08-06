@@ -23,6 +23,10 @@
 #ifndef __I_SOUND__
 #define __I_SOUND__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 
 // UNIX hack, to be removed.
@@ -113,7 +117,9 @@ void I_StopSong(int handle);
 void I_UnRegisterSong(int handle);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

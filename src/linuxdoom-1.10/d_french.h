@@ -23,6 +23,10 @@
 #ifndef __D_FRENCH__
 #define __D_FRENCH__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // D_Main.C
 //
@@ -422,6 +426,9 @@
 #define CC_HERO		"NOTRE HEROS"
 
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

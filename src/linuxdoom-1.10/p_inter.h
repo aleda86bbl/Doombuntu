@@ -23,6 +23,10 @@
 #ifndef __P_INTER__
 #define __P_INTER__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -32,7 +36,9 @@
 boolean	P_GivePower(player_t*, int);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

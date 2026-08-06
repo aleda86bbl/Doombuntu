@@ -24,6 +24,10 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__
@@ -54,7 +58,9 @@ typedef unsigned char byte;
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

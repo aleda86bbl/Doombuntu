@@ -25,6 +25,10 @@
 #ifndef __V_VIDEO__
 #define __V_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 
 #include "doomdef.h"
@@ -111,6 +115,9 @@ V_MarkRect
   int		width,
   int		height );
 
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

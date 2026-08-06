@@ -23,6 +23,10 @@
 #ifndef __R_DEFS__
 #define __R_DEFS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // Screenwidth.
 #include "doomdef.h"
@@ -481,7 +485,9 @@ typedef struct
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

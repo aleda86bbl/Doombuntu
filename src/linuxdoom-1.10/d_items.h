@@ -23,6 +23,10 @@
 #ifndef __D_ITEMS__
 #define __D_ITEMS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 
 #ifdef __GNUG__
@@ -43,6 +47,10 @@ typedef struct
 } weaponinfo_t;
 
 extern  weaponinfo_t    weaponinfo[NUMWEAPONS];
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

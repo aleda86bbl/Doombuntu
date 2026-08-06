@@ -23,6 +23,10 @@
 #ifndef __P_SAVEG__
 #define __P_SAVEG__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -42,7 +46,9 @@ void P_UnArchiveSpecials (void);
 
 extern byte*		save_p; 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

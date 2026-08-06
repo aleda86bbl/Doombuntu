@@ -23,6 +23,10 @@
 #ifndef __D_PLAYER__
 #define __D_PLAYER__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -210,7 +214,9 @@ typedef struct
 
 } wbstartstruct_t;
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

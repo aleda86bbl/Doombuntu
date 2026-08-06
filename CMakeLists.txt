@@ -3,7 +3,11 @@ cmake_minimum_required(VERSION 3.23)
 set(CMAKE_C_COMPILER_TARGET "x86_64-linux-gnu")
 set(CMAKE_CXX_COMPILER_TARGET "x86_64-linux-gnu")
 
-project(Doombuntu)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+project(Doombuntu C CXX)
+
 include(FetchContent)
 FetchContent_Declare(
     SDL3
@@ -37,7 +41,7 @@ target_sources(Doombuntu
         src/linuxdoom-1.10/i_net.c
         src/linuxdoom-1.10/i_sound.c
         src/linuxdoom-1.10/i_system.c
-        src/linuxdoom-1.10/i_video.c
+        src/linuxdoom-1.10/i_video.cpp
         src/linuxdoom-1.10/info.c
         src/linuxdoom-1.10/m_argv.c
         src/linuxdoom-1.10/m_bbox.c

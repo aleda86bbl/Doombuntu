@@ -25,6 +25,10 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 
 #ifdef __GNUG__
@@ -60,5 +64,7 @@ void D_PageTicker (void);
 void D_PageDrawer (void);
 void D_AdvanceDemo (void);
 void D_StartTitle (void);
-
+#ifdef __cplusplus
+}
+#endif
 #endif

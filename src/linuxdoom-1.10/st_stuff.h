@@ -24,6 +24,10 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "d_event.h"
 
@@ -76,7 +80,9 @@ typedef enum
 
 boolean ST_Responder(event_t* ev);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

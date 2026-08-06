@@ -23,6 +23,10 @@
 #ifndef __P_PSPR__
 #define __P_PSPR__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Basic data types.
 // Needs fixed point, and BAM angles.
 #include "m_fixed.h"
@@ -73,7 +77,9 @@ typedef struct
     fixed_t	sy;
 
 } pspdef_t;
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

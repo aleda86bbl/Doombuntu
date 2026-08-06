@@ -23,6 +23,10 @@
 #ifndef __M_CHEAT__
 #define __M_CHEAT__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
@@ -49,7 +53,9 @@ cht_GetParam
 ( cheatseq_t*		cht,
   char*			buffer );
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

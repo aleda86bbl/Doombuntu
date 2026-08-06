@@ -23,6 +23,10 @@
 #ifndef __DOOMDEF__
 #define __DOOMDEF__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
@@ -329,7 +333,9 @@ typedef enum
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif          // __DOOMDEF__
 //-----------------------------------------------------------------------------
 //

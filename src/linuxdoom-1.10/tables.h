@@ -36,6 +36,10 @@
 #ifndef __TABLES__
 #define __TABLES__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 
 #ifdef LINUX
@@ -91,6 +95,9 @@ SlopeDiv
 ( unsigned	num,
   unsigned	den);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

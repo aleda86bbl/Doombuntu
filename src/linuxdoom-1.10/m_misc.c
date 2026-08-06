@@ -46,7 +46,7 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "w_wad.h"
 
 #include "i_system.h"
-#include "i_video.h"
+#include "i_video.hpp"
 #include "v_video.h"
 
 #include "hu_stuff.h"

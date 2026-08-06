@@ -23,6 +23,10 @@
 #ifndef __D_NET__
 #define __D_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_player.h"
 
 
@@ -138,7 +142,9 @@ void D_QuitNetGame (void);
 //? how many ticks to run?
 void TryRunTics (void);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 //-----------------------------------------------------------------------------

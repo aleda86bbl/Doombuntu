@@ -23,6 +23,10 @@
 #ifndef __M_MISC__
 #define __M_MISC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "doomtype.h"
 //
@@ -56,7 +60,9 @@ M_DrawText
   boolean	direct,
   char*		string );
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

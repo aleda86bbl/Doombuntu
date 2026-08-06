@@ -24,6 +24,10 @@
 #ifndef __D_TEXTUR__
 #define __D_TEXTUR__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 
 
@@ -42,7 +46,9 @@ typedef struct
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

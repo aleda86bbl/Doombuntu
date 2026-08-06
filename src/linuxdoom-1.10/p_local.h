@@ -23,6 +23,10 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef __R_LOCAL__
 #include "r_local.h"
 #endif
@@ -278,7 +282,9 @@ P_DamageMobj
 //
 #include "p_spec.h"
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif	// __P_LOCAL__
 //-----------------------------------------------------------------------------
 //

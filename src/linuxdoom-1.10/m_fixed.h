@@ -23,6 +23,10 @@
 #ifndef __M_FIXED__
 #define __M_FIXED__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -42,7 +46,9 @@ fixed_t FixedDiv	(fixed_t a, fixed_t b);
 fixed_t FixedDiv2	(fixed_t a, fixed_t b);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

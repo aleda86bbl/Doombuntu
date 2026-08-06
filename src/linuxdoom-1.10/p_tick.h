@@ -23,6 +23,10 @@
 #ifndef __P_TICK__
 #define __P_TICK__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -35,7 +39,9 @@
 void P_Ticker (void);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

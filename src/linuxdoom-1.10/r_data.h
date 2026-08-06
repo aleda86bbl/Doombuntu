@@ -24,6 +24,10 @@
 #ifndef __R_DATA__
 #define __R_DATA__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 #include "r_state.h"
 
@@ -53,7 +57,9 @@ int R_FlatNumForName (char* name);
 // returns the texture number for the texture name.
 int R_TextureNumForName (char *name);
 int R_CheckTextureNumForName (char *name);
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

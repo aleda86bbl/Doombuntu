@@ -27,6 +27,10 @@
 #ifndef __Z_ZONE__
 #define __Z_ZONE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 
 //
@@ -76,7 +80,9 @@ typedef struct memblock_s
 	  Z_ChangeTag2(p,t); \
 };
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

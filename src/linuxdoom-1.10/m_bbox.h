@@ -23,6 +23,10 @@
 #ifndef __M_BBOX__
 #define __M_BBOX__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <values.h>
 
 #include "m_fixed.h"
@@ -46,7 +50,9 @@ M_AddToBox
   fixed_t	x,
   fixed_t	y );
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

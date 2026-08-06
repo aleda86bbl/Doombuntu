@@ -23,6 +23,10 @@
 #ifndef __R_PLANE__
 #define __R_PLANE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "r_data.h"
 
@@ -78,7 +82,9 @@ R_CheckPlane
   int		stop );
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

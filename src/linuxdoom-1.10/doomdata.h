@@ -24,6 +24,10 @@
 #ifndef __DOOMDATA__
 #define __DOOMDATA__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // The most basic types we use, portability.
 #include "doomtype.h"
 
@@ -212,7 +216,9 @@ typedef struct
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif			// __DOOMDATA__
 //-----------------------------------------------------------------------------
 //

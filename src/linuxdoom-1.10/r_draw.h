@@ -23,6 +23,10 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -106,7 +110,9 @@ void R_FillBackScreen (void);
 void R_DrawViewBorder (void);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

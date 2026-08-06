@@ -23,6 +23,10 @@
 #ifndef __I_VIDEO__
 #define __I_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "doomtype.h"
 
@@ -54,7 +58,9 @@ void I_BeginRead (void);
 void I_EndRead (void);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

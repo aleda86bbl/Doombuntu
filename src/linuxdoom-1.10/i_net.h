@@ -23,6 +23,10 @@
 #ifndef __I_NET__
 #define __I_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -36,7 +40,9 @@
 void I_InitNetwork (void);
 void I_NetCmd (void);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

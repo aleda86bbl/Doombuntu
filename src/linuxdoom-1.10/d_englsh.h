@@ -23,6 +23,10 @@
 #ifndef __D_ENGLSH__
 #define __D_ENGLSH__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 //	Printed strings for translation
 //
@@ -692,6 +696,9 @@
 #define CC_CYBER	"THE CYBERDEMON"
 #define CC_HERO	"OUR HERO"
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

@@ -23,6 +23,10 @@
 #ifndef __F_WIPE_H__
 #define __F_WIPE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 //                       SCREEN WIPE PACKAGE
 //
@@ -62,7 +66,9 @@ wipe_ScreenWipe
   int		width,
   int		height,
   int		ticks );
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

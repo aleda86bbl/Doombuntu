@@ -23,6 +23,10 @@
 #ifndef __R_THINGS__
 #define __R_THINGS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -67,6 +71,9 @@ R_ClipVisSprite
   int			xl,
   int			xh );
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

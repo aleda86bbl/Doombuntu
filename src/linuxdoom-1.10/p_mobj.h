@@ -23,6 +23,10 @@
 #ifndef __P_MOBJ__
 #define __P_MOBJ__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
@@ -286,7 +290,9 @@ typedef struct mobj_s
 } mobj_t;
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

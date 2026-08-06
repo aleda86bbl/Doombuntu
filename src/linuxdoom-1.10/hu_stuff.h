@@ -21,6 +21,10 @@
 #ifndef __HU_STUFF_H__
 #define __HU_STUFF_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 
 
@@ -57,7 +61,9 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_Erase(void);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

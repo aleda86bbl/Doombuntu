@@ -23,6 +23,10 @@
 #ifndef __D_EVENT__
 #define __D_EVENT__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "doomtype.h"
 
@@ -113,6 +117,9 @@ extern	int		eventtail;
 
 extern  gameaction_t    gameaction;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

@@ -23,6 +23,10 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_event.h"
 
@@ -86,9 +90,11 @@ byte* I_AllocLow (int length);
 void I_Tactile (int on, int off, int total);
 
 
-void I_Error (char *error, ...);
+void I_Error (const char *error, ...);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

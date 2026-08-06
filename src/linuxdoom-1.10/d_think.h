@@ -25,6 +25,10 @@
 #ifndef __D_THINK__
 #define __D_THINK__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -71,6 +75,9 @@ typedef struct thinker_s
 
 
 
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

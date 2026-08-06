@@ -23,6 +23,10 @@
 #ifndef __R_STATE__
 #define __R_STATE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Need data structure definitions.
 #include "d_player.h"
 #include "r_data.h"
@@ -129,7 +133,9 @@ extern int		sscount;
 extern visplane_t*	floorplane;
 extern visplane_t*	ceilingplane;
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

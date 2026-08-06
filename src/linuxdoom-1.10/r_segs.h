@@ -23,6 +23,10 @@
 #ifndef __R_SEGS__
 #define __R_SEGS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -35,6 +39,9 @@ R_RenderMaskedSegRange
   int		x1,
   int		x2 );
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

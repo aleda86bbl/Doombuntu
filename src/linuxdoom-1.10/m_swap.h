@@ -23,6 +23,10 @@
 #ifndef __M_SWAP__
 #define __M_SWAP__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #ifdef __GNUG__
 #pragma interface
@@ -43,7 +47,9 @@ long	SwapLONG(long);
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //

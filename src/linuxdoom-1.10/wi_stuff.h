@@ -22,6 +22,10 @@
 #ifndef __WI_STUFF__
 #define __WI_STUFF__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //#include "v_video.h"
 
 #include "doomdef.h"
@@ -45,6 +49,10 @@ void WI_Drawer (void);
 
 // Setup for an intermission screen.
 void WI_Start(wbstartstruct_t*	 wbstartstruct);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 //-----------------------------------------------------------------------------

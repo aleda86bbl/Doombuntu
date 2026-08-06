@@ -23,6 +23,10 @@
 #ifndef __M_MENU__
 #define __M_MENU__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 
 #include "d_event.h"
@@ -58,7 +62,9 @@ void M_StartControlPanel (void);
 
 
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif    
 //-----------------------------------------------------------------------------
 //

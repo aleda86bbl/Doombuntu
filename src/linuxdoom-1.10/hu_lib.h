@@ -21,6 +21,10 @@
 #ifndef __HULIB__
 #define __HULIB__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // We are referring to patches.
 #include "r_defs.h"
 
@@ -187,7 +191,9 @@ void HUlib_drawIText(hu_itext_t* it);
 
 // erases all itext lines
 void HUlib_eraseIText(hu_itext_t* it); 
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 //-----------------------------------------------------------------------------
 //
