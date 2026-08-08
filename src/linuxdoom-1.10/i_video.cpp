@@ -103,50 +103,51 @@ static int	multiply=1;
 //  Translates the key currently in X_event
 //
 
-int sdlTranslateKey(SDL_Scancode scanCode)
+int sdlTranslateKey(SDL_Keycode keyCode)
 {
 	int rc = 0;
-	switch(scanCode)
+	switch(keyCode)
 	{
-		case SDL_SCANCODE_LEFT: rc = KEY_LEFTARROW; break;
-		case SDL_SCANCODE_RIGHT: rc = KEY_RIGHTARROW; break;
-		case SDL_SCANCODE_DOWN: rc = KEY_DOWNARROW; break;
-		case SDL_SCANCODE_UP: rc = KEY_UPARROW; break;
-		case SDL_SCANCODE_ESCAPE: rc = KEY_ESCAPE; break;
-		case SDL_SCANCODE_RETURN: rc = KEY_ENTER; break;
-		case SDL_SCANCODE_TAB: rc = KEY_TAB; break;
-		case SDL_SCANCODE_F1: rc = KEY_F1; break;
-		case SDL_SCANCODE_F2: rc = KEY_F2; break;
-		case SDL_SCANCODE_F3: rc = KEY_F3; break;
-		case SDL_SCANCODE_F4: rc = KEY_F4; break;
-		case SDL_SCANCODE_F5: rc = KEY_F5; break;
-		case SDL_SCANCODE_F6: rc = KEY_F6; break;
-		case SDL_SCANCODE_F7: rc = KEY_F7; break;
-		case SDL_SCANCODE_F8: rc = KEY_F8; break;
-		case SDL_SCANCODE_F9: rc = KEY_F9; break;
-		case SDL_SCANCODE_F10: rc = KEY_F10; break;
-		case SDL_SCANCODE_F11: rc = KEY_F11; break;
-		case SDL_SCANCODE_F12: rc = KEY_F12; break;
-		case SDL_SCANCODE_BACKSPACE:
-		case SDL_SCANCODE_DELETE: rc = KEY_BACKSPACE; break;
-		case SDL_SCANCODE_PAUSE: rc = KEY_PAUSE; break;
-		case SDL_SCANCODE_KP_EQUALS:
-		case SDL_SCANCODE_EQUALS: rc = KEY_EQUALS; break;
-		case SDL_SCANCODE_KP_MINUS:
-		case SDL_SCANCODE_MINUS: rc = KEY_MINUS; break;
-		case SDL_SCANCODE_LSHIFT:
-		case SDL_SCANCODE_RSHIFT: rc = KEY_RSHIFT; break;
-		case SDL_SCANCODE_LCTRL:
-		case SDL_SCANCODE_RCTRL: rc = KEY_RCTRL; break;
-		case SDL_SCANCODE_LALT:
-		case SDL_SCANCODE_RALT:
-		case SDL_SCANCODE_LGUI:
-		case SDL_SCANCODE_RGUI: rc = KEY_RALT; break;
+		case SDLK_LEFT: rc = KEY_LEFTARROW; break;
+		case SDLK_RIGHT: rc = KEY_RIGHTARROW; break;
+		case SDLK_DOWN: rc = KEY_DOWNARROW; break;
+		case SDLK_UP: rc = KEY_UPARROW; break;
+		case SDLK_ESCAPE: rc = KEY_ESCAPE; break;
+		case SDLK_RETURN: rc = KEY_ENTER; break;
+		case SDLK_TAB: rc = KEY_TAB; break;
+		case SDLK_F1: rc = KEY_F1; break;
+		case SDLK_F2: rc = KEY_F2; break;
+		case SDLK_F3: rc = KEY_F3; break;
+		case SDLK_F4: rc = KEY_F4; break;
+		case SDLK_F5: rc = KEY_F5; break;
+		case SDLK_F6: rc = KEY_F6; break;
+		case SDLK_F7: rc = KEY_F7; break;
+		case SDLK_F8: rc = KEY_F8; break;
+		case SDLK_F9: rc = KEY_F9; break;
+		case SDLK_F10: rc = KEY_F10; break;
+		case SDLK_F11: rc = KEY_F11; break;
+		case SDLK_F12: rc = KEY_F12; break;
+		case SDLK_BACKSPACE:
+		case SDLK_DELETE: rc = KEY_BACKSPACE; break;
+		case SDLK_PAUSE: rc = KEY_PAUSE; break;
+		case SDLK_KP_EQUALS:
+		case SDLK_EQUALS: rc = KEY_EQUALS; break;
+		case SDLK_KP_MINUS:
+		case SDLK_MINUS: rc = KEY_MINUS; break;
+		case SDLK_LSHIFT:
+		case SDLK_RSHIFT: rc = KEY_RSHIFT; break;
+		case SDLK_LCTRL:
+		case SDLK_RCTRL: rc = KEY_RCTRL; break;
+		case SDLK_LALT:
+		case SDLK_RALT:
+		case SDLK_LGUI:
+		case SDLK_RGUI: rc = KEY_RALT; break;
 		default:
-			if (rc >= SDL_SCANCODE_SPACE && rc <= SDL_SCANCODE_GRAVE)
-			    rc = rc - SDL_SCANCODE_SPACE + ' ';
+			rc = keyCode;
+			if (rc >= SDLK_SPACE && rc <= SDLK_GRAVE)
+				rc = rc - SDLK_SPACE + ' ';
 			if (rc >= 'A' && rc <= 'Z')
-	    		rc = rc - 'A' + 'a';
+				rc = rc - 'A' + 'a';
 			break;
 	}
 	return rc;
@@ -183,12 +184,12 @@ void I_HandleEvent(const SDL_Event* sdlEvent)
 	{
 		case SDL_EVENT_KEY_DOWN:
 			event.type = ev_keydown;
-			event.data1 = sdlTranslateKey(sdlEvent->key.scancode);
+			event.data1 = sdlTranslateKey(sdlEvent->key.key);
 			D_PostEvent(&event);
 			break;
 		case SDL_EVENT_KEY_UP:
 			event.type = ev_keyup;
-			event.data1 = sdlTranslateKey(sdlEvent->key.scancode);
+			event.data1 = sdlTranslateKey(sdlEvent->key.key);
 			D_PostEvent(&event);
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
