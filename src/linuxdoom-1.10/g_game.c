@@ -33,7 +33,7 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #include "z_zone.h"
 #include "f_finale.h"
 #include "m_argv.h"
-#include "m_misc.h"
+#include "m_misc.hpp"
 #include "m_menu.h"
 #include "m_random.h"
 #include "i_system.h"

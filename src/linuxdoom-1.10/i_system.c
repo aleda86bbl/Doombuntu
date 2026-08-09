@@ -33,7 +33,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include <unistd.h>
 
 #include "doomdef.h"
-#include "m_misc.h"
+#include "m_misc.hpp"
 #include "i_video.h"
 #include "i_sound.h"
 

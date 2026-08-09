@@ -57,7 +57,7 @@ static const char rcsid[] = "$Id: d_main.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #include "f_wipe.h"
 
 #include "m_argv.h"
-#include "m_misc.h"
+#include "m_misc.hpp"
 #include "m_menu.h"
 
 #include "i_system.h"

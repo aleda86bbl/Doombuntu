@@ -54,7 +54,7 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "i_system.h"
 #include "i_sound.h"
 #include "m_argv.h"
-#include "m_misc.h"
+#include "m_misc.hpp"
 #include "w_wad.h"
 
 #include "doomdef.h"

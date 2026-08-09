@@ -48,7 +48,7 @@ target_sources(Doombuntu
         src/linuxdoom-1.10/m_cheat.c
         src/linuxdoom-1.10/m_fixed.c
         src/linuxdoom-1.10/m_menu.c
-        src/linuxdoom-1.10/m_misc.c
+        src/linuxdoom-1.10/m_misc.cpp
         src/linuxdoom-1.10/m_random.c
         src/linuxdoom-1.10/m_swap.c
         src/linuxdoom-1.10/p_ceilng.c
