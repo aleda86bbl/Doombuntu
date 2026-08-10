@@ -58,6 +58,7 @@ static const char rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "m_misc.hpp"
 #include <array>
 #include <string>
+#include <fstream>
 
 //
 // M_DrawText
@@ -301,27 +302,24 @@ char *defaultfile;
 //
 void M_SaveDefaults(void)
 {
-    int v;
-    FILE *f;
-
-    f = fopen(defaultfile, "w");
-    if (!f)
-        return; // can't write the file, but don't complain
+    std::ofstream fileStream(defaultfile, std::ios::out);
+    if (!fileStream.is_open())
+        return;
 
     for (const auto& [name, location, defaultValue, scanTranslate, untranslated] : defaults)
     {
         if (defaultValue == -1)
         {
-            char * stringPtr = *(char **)(location);
-            fprintf(f, "%s\t\t\"%s\"\n", name.c_str(), stringPtr);
+            char * stringPtr = *reinterpret_cast<char**>(location);
+            std::string_view stringView(stringPtr);
+            fileStream << name << "\t\t" << stringView << "\n";
         }
         else
         {
-            v = *location;
-            fprintf(f, "%s\t\t%i\n", name.c_str(), v);
+            fileStream << name << "\t\t" << *location << "\n";
         }
     }
-    fclose(f);
+    fileStream.close();
 }
 
 //
