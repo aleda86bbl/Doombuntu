@@ -57,9 +57,12 @@ static const char rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include "m_misc.hpp"
 #include <array>
-#include <string>
+#include <charconv>
 #include <fstream>
-
+#include <iostream>
+#include <ranges>
+#include <string>
+#include <vector>
 //
 // M_DrawText
 // Returns the final X coordinate
@@ -306,11 +309,11 @@ void M_SaveDefaults(void)
     if (!fileStream.is_open())
         return;
 
-    for (const auto& [name, location, defaultValue, scanTranslate, untranslated] : defaults)
+    for (const auto &[name, location, defaultValue, scanTranslate, untranslated] : defaults)
     {
         if (defaultValue == -1)
         {
-            char * stringPtr = *reinterpret_cast<char**>(location);
+            char *stringPtr = *reinterpret_cast<char **>(location);
             std::string_view stringView(stringPtr);
             fileStream << name << "\t\t" << stringView << "\n";
         }
@@ -327,68 +330,93 @@ void M_SaveDefaults(void)
 //
 extern byte scantokey[128];
 
+using namespace std::string_view_literals;
+
 void M_LoadDefaults(void)
 {
     int i;
-    int len;
-    FILE *f;
-    char def[80];
-    char strparm[100];
-    char *newstring;
-    int parm;
-    boolean isstring;
 
     // set everything to base values
-    numdefaults = sizeof(defaults) / sizeof(defaults[0]);
-    for (i = 0; i < numdefaults; i++)
-        *defaults[i].location = defaults[i].defaultValue;
+    for (auto &defaultIter : defaults)
+    {
+        *defaultIter.location = defaultIter.defaultValue;
+    }
 
     // check for a custom default file
     i = M_CheckParm("-config");
     if (i && i < myargc - 1)
     {
         defaultfile = myargv[i + 1];
-        printf("	default file: %s\n", defaultfile);
+        std::cout << "	default file: " << defaultfile << std::endl;
     }
     else
+    {
         defaultfile = basedefault;
+    }
 
     // read the file in, overriding any set defaults
-    f = fopen(defaultfile, "r");
-    if (f)
+    std::ifstream fileStream(defaultfile, std::ios::in);
+    if (!fileStream.is_open())
+        return;
+
+    std::string fileLine;
+    std::array<std::string, 2> lineParts;
+    std::string newString;
+    while (std::getline(fileStream, fileLine))
     {
-        while (!feof(f))
+        auto enumeratedSplitViews = fileLine | std::views::split("\t\t"sv) | std::views::enumerate;
+        for (auto [i, subRange] : enumeratedSplitViews)
         {
-            isstring = false;
-            if (fscanf(f, "%79s %[^\n]\n", def, strparm) == 2)
+            if (i > lineParts.size())
+                break;
+            lineParts[i] = std::string(subRange.begin(), subRange.end());
+        }
+        std::string const &paramName = lineParts[0];
+        std::string const &paramStrVal = lineParts[1];
+        int paramVal;
+        bool isString;
+        if (paramStrVal[0] == '"')
+        {
+            isString = true;
+            newString = std::string(paramStrVal);
+        }
+        else
+        {
+            isString = false;
+            char const *paramStrDataStart;
+            char const *paramStrDataEnd;
+            int base;
+            if (paramStrVal[0] == '0' && paramStrVal[1] == 'x')
             {
-                if (strparm[0] == '"')
+                paramStrDataStart = paramStrVal.data() + 2;
+                base = 16;
+            }
+            else
+            {
+                paramStrDataStart = paramStrVal.data();
+                base = 10;
+            }
+            paramStrDataEnd = paramStrVal.data() + paramStrVal.size();
+            auto [ptr, ec] = std::from_chars(paramStrDataStart, paramStrDataEnd, paramVal, base);
+        }
+        for (auto &defaultIter : defaults)
+        {
+            if (defaultIter.name == paramName)
+            {
+                if (!isString)
                 {
-                    // get a string default
-                    isstring = true;
-                    len = strlen(strparm);
-                    newstring = (char *)malloc(len);
-                    strparm[len - 1] = 0;
-                    strcpy(newstring, strparm + 1);
+                    *defaultIter.location = paramVal;
                 }
-                else if (strparm[0] == '0' && strparm[1] == 'x')
-                    sscanf(strparm + 2, "%x", &parm);
                 else
-                    sscanf(strparm, "%i", &parm);
-                for (i = 0; i < numdefaults; i++)
-                    if (!strcmp(def, defaults[i].name.c_str()))
-                    {
-                        if (!isstring)
-                            *defaults[i].location = parm;
-                        else
-                            *defaults[i].location = *newstring;
-                        break;
-                    }
+                {
+                    *defaultIter.location = *newString.c_str();
+                }
+                break;
             }
         }
-
-        fclose(f);
     }
+
+    fileStream.close();
 }
 
 //
