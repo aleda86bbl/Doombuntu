@@ -16,10 +16,18 @@ FetchContent_Declare(
     OVERRIDE_FIND_PACKAGE
 )
 
+FetchContent_Declare(
+    libADLMIDI
+    GIT_REPOSITORY https://github.com/Wohlstand/libADLMIDI.git
+    GIT_TAG v1.6.1
+    OVERRIDE_FIND_PACKAGE
+)
+
 find_package(X11 REQUIRED COMPONENTS Xext)
 find_library(NSL_LIB nsl)
 find_library(MATHS_LIB m)
 find_package(SDL3)
+find_package(libADLMIDI)
 
 add_executable(Doombuntu)
 
@@ -103,4 +111,5 @@ target_link_libraries(Doombuntu
     SDL3::SDL3
     ${NSL_LIB}
     ${MATHS_LIB}
+    ADLMIDI_static
 )
