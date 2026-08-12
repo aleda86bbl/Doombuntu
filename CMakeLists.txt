@@ -39,7 +39,7 @@ target_sources(Doombuntu
         src/linuxdoom-1.10/hu_stuff.c
         src/linuxdoom-1.10/i_main.c
         src/linuxdoom-1.10/i_net.c
-        src/linuxdoom-1.10/i_sound.c
+        src/linuxdoom-1.10/i_sound.cpp
         src/linuxdoom-1.10/i_system.c
         src/linuxdoom-1.10/i_video.cpp
         src/linuxdoom-1.10/info.c

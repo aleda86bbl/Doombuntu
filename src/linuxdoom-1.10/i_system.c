@@ -35,7 +35,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include "doomdef.h"
 #include "m_misc.hpp"
 #include "i_video.h"
-#include "i_sound.h"
+#include "i_sound.hpp"
 
 #include "d_net.h"
 #include "g_game.h"
@@ -48,7 +48,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 
 
 
-int	mb_used = 6;
+int	mb_used = 32;
 
 
 void
@@ -178,6 +178,7 @@ void I_Error (const char *error, ...)
 
     D_QuitNetGame ();
     I_ShutdownGraphics();
+    I_ShutdownSound();
     
     exit(-1);
 }

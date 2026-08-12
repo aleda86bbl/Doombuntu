@@ -258,7 +258,7 @@ std::array<DefaultType, DefaultArraySize> defaults = {
 // UNIX hack, to be removed.
 #ifdef SNDSERV
      {"sndserver", (int *)&sndserver_filename, (long long)"sndserver"},
-     {"mb_used", &mb_used, 2},
+     {"mb_used", &mb_used, 32},
 #endif
 
 #endif
