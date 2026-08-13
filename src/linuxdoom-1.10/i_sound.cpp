@@ -58,8 +58,11 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 #include "SDL3/SDL.h"
 #include "doomdef.h"
+#include <adlmidi.h>
+#include <cstddef>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 
 // UNIX hack, to be removed.
 #ifdef SNDSERV
@@ -68,6 +71,17 @@ FILE *sndserver = 0;
 char *sndserver_filename = "./sndserver ";
 using UniqueAudioStream = std::unique_ptr<SDL_AudioStream, void (*)(SDL_AudioStream *)>;
 UniqueAudioStream audioStream = UniqueAudioStream(nullptr, SDL_DestroyAudioStream);
+using UniqueMIDIPlayer = std::unique_ptr<ADL_MIDIPlayer, void (*)(ADL_MIDIPlayer *)>;
+UniqueMIDIPlayer midiPlayer = UniqueMIDIPlayer(nullptr, adl_close);
+
+struct Song
+{
+    std::byte *data;
+    size_t size;
+};
+std::unordered_map<int, Song> songs;
+int activeSongHandle = -1;
+bool songPaused = false;
 #elif SNDINTR
 
 // Update all 30 millisecs, approx. 30fps synchronized.
@@ -113,6 +127,7 @@ int audio_fd;
 //  are modifed and added, and stored in the buffer
 //  that is submitted to the audio device.
 signed short mixbuffer[MIXBUFFERSIZE];
+signed short musicBuffer[MIXBUFFERSIZE];
 
 // The channel step amount...
 unsigned int channelstep[NUM_CHANNELS];
@@ -492,6 +507,9 @@ void I_UpdateSound(void)
     // Debug. Count buffer misses with interrupt.
     static int misses = 0;
 #endif
+    // continue to play music
+    if (midiPlayer)
+        adl_play(midiPlayer.get(), MIXBUFFERSIZE, musicBuffer);
 
     // Mix current sound data.
     // Data, from raw sound, for right and left.
@@ -522,6 +540,7 @@ void I_UpdateSound(void)
     // Mix sounds into the mixing buffer.
     // Loop over step*SAMPLECOUNT,
     //  that is 512 values for two channels.
+    int musicSample = 0;
     while (leftout != leftend)
     {
         // Reset left/right value.
@@ -557,6 +576,10 @@ void I_UpdateSound(void)
             }
         }
 
+        int const musicGain = snd_MusicVolume;
+        dl += (musicBuffer[musicSample * 2] * musicGain) / 127;
+        dr += (musicBuffer[musicSample * 2 + 1] * musicGain) / 127;
+
         // Clamp to range. Left hardware channel.
         // Has been char instead of short.
         // if (dl > 127) *leftout = 127;
@@ -581,6 +604,7 @@ void I_UpdateSound(void)
         // Increment current pointers in mixbuffer.
         leftout += step;
         rightout += step;
+        ++musicSample;
     }
 
 #ifdef SNDINTR
@@ -666,7 +690,7 @@ void I_InitSound()
     for (int i = 1; i < NUMSFX; i++)
     {
         // Alias? Example is the chaingun sound linked to pistol.
-        std::cout << "loading sound: " << i <<  "/" << NUMSFX << std::endl;
+        std::cout << "loading sound: " << i << "/" << NUMSFX << std::endl;
         if (!S_sfx[i].link)
         {
             // Load data from WAD file.
@@ -690,7 +714,6 @@ void I_InitSound()
     fprintf(stderr, "I_InitSound: sound module ready\n");
 }
 
-
 //
 // MUSIC API.
 // Still no music done.
@@ -698,6 +721,11 @@ void I_InitSound()
 //
 void I_InitMusic(void)
 {
+    midiPlayer.reset(adl_init(11025));
+    if (!midiPlayer)
+    {
+        std::cerr << "adl_init failed: " << adl_errorString() << std::endl;
+    }
 }
 void I_ShutdownMusic(void)
 {
@@ -705,11 +733,19 @@ void I_ShutdownMusic(void)
 
 static int looping = 0;
 static int musicdies = -1;
+static int newSongHandle = -1;
 
 void I_PlaySong(int handle, int looping)
 {
-    // UNUSED.
-    handle = looping = 0;
+    Song const &currentSong = songs.at(handle);
+    int loadStatus = adl_openData(midiPlayer.get(), currentSong.data, currentSong.size);
+    if (loadStatus < 0)
+    {
+        std::cerr << "Failed adl_openData for song: " << adl_errorString() << std::endl;
+        return;
+    }
+    adl_setLoopEnabled(midiPlayer.get(), looping);
+
     musicdies = gametic + TICRATE * 30;
 }
 
@@ -736,16 +772,14 @@ void I_StopSong(int handle)
 
 void I_UnRegisterSong(int handle)
 {
-    // UNUSED.
-    handle = 0;
+    songs.erase(handle);
 }
 
-int I_RegisterSong(void *data)
+int I_RegisterSong(void *data, size_t size)
 {
-    // UNUSED.
-    data = NULL;
-
-    return 1;
+    ++newSongHandle;
+    songs.emplace(newSongHandle, Song({static_cast<std::byte *>(data), size}));
+    return newSongHandle;
 }
 
 // Is the song playing?
