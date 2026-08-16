@@ -78,6 +78,7 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 constexpr size_t SampleCount = 512;
 constexpr size_t BufMul = 4;
 constexpr size_t MixBufferSize = SampleCount * BufMul;
+constexpr size_t MusicSampleCount = SampleCount * 2;
 
 #define SAMPLERATE 11025 // Hz
 #define SAMPLESIZE 2     // 16bit
@@ -101,7 +102,7 @@ struct Song
 };
 
 std::unordered_map<int, Song> songs;
-std::optional<std::reference_wrapper<Song const> > currentSong = std::nullopt;
+std::optional<std::reference_wrapper<Song const>> currentSong = std::nullopt;
 int activeSongHandle = -1;
 bool songPaused = false;
 #elif SNDINTR
@@ -494,10 +495,15 @@ int I_SoundIsPlaying(int handle)
 
 void I_ProduceSound(void)
 {
-    int queuedBytes = SDL_GetAudioStreamQueued(audioStream.get());
-    int byteblock = 2048;
-    int queueByteLimit = 1 * 2048;
-    if (queuedBytes < queueByteLimit)
+    if (!audioStream)
+        return;
+
+    constexpr int bytesPerFrame = 2 * sizeof(short);
+    constexpr int blockBytes = SAMPLECOUNT * bytesPerFrame;
+    constexpr int targetQueuedBytes = 4 * blockBytes;
+
+    for (int queuedBytes = SDL_GetAudioStreamQueued(audioStream.get()); queuedBytes < targetQueuedBytes;
+         queuedBytes += blockBytes)
     {
         I_UpdateSound();
         I_SubmitSound();
@@ -526,14 +532,14 @@ void I_UpdateSound(void)
     // continue to play music
     if (currentSong.has_value() && currentSong->get().playing)
     {
-        adl_play(midiPlayer.get(), MIXBUFFERSIZE, activeMusicBuffer.data());    
+        int const bytesWritten = adl_play(midiPlayer.get(), MusicSampleCount, activeMusicBuffer.data());
+        std::fill(activeMusicBuffer.begin() + std::max(bytesWritten, 0), activeMusicBuffer.end(), 0);
         musicBuffer = activeMusicBuffer;
     }
     else
     {
         musicBuffer = silentMusicBuffer;
     }
-    
 
     // Mix current sound data.
     // Data, from raw sound, for right and left.
@@ -765,7 +771,14 @@ void I_PlaySong(int handle, int looping)
 {
     songs.at(handle).playing = true;
     songs.at(handle).looping = looping;
-    adl_openData(midiPlayer.get(), songs.at(handle).data, songs.at(handle).size);
+    int openResult = adl_openData(midiPlayer.get(), songs.at(handle).data, songs.at(handle).size);
+    if (openResult < 0)
+    {
+        std::cerr << "Error running adl_openData: " << adl_errorString() << std::endl;
+        songs.at(handle).playing = false;
+        songs.at(handle).looping = false;
+        currentSong = std::nullopt;
+    }
     adl_setLoopEnabled(midiPlayer.get(), songs.at(handle).looping);
     currentSong = songs.at(handle);
 }
@@ -789,6 +802,7 @@ void I_StopSong(int handle)
 
 void I_UnRegisterSong(int handle)
 {
+    I_StopSong(handle);
     songs.erase(handle);
 }
 
