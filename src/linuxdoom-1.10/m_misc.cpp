@@ -195,7 +195,6 @@ extern int numChannels;
 
 // UNIX hack, to be removed.
 #ifdef SNDSERV
-extern char *sndserver_filename;
 extern int mb_used;
 #endif
 
@@ -224,7 +223,7 @@ constexpr std::size_t NormalUnixSize = 0;
 #endif
 
 #ifdef SNDSERV
-constexpr std::size_t SndServSize = 2;
+constexpr std::size_t SndServSize = 1;
 #else
 constexpr std::size_t SndServSize = 0;
 #endif
@@ -257,7 +256,6 @@ std::array<DefaultType, DefaultArraySize> defaults = {
 
 // UNIX hack, to be removed.
 #ifdef SNDSERV
-     {"sndserver", (int *)&sndserver_filename, (long long)"sndserver"},
      {"mb_used", &mb_used, 32},
 #endif
 

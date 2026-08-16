@@ -72,8 +72,6 @@ constexpr size_t SAMPLE_SIZE = 2;
 
 // UNIX hack, to be removed.
 // Separate sound server process.
-FILE *sndserver = 0;
-char *sndserver_filename = "./sndserver ";
 using UniqueAudioStream = std::unique_ptr<SDL_AudioStream, void (*)(SDL_AudioStream *)>;
 UniqueAudioStream audioStream = UniqueAudioStream(nullptr, SDL_DestroyAudioStream);
 using UniqueMIDIPlayer = std::unique_ptr<ADL_MIDIPlayer, void (*)(ADL_MIDIPlayer *)>;
@@ -98,7 +96,8 @@ std::optional<std::reference_wrapper<Song const>> currentSong = std::nullopt;
 // Needed for calling the actual sound output.
 
 // The actual lengths of all sound effects.
-int lengths[NUMSFX];
+//int lengths[NUMSFX];
+std::array<int, NUMSFX> lengths{};
 
 
 // The global mixing buffer.
@@ -111,13 +110,17 @@ std::array<short, MIX_BUFFER_SIZE> silentMusicBuffer{};
 std::span<short const> musicBuffer{};
 
 // The channel step amount...
-unsigned int channelstep[NUM_CHANNELS];
+//unsigned int channelstep[NUM_CHANNELS];
+std::array<unsigned int, NUM_CHANNELS> channelstep{};
+
 // ... and a 0.16 bit remainder of last step.
-unsigned int channelstepremainder[NUM_CHANNELS];
+//unsigned int channelstepremainder[NUM_CHANNELS];
+std::array<unsigned int, NUM_CHANNELS> channelstepremainder{};
 
 // The channel data pointers, start and end.
-unsigned char *channels[NUM_CHANNELS];
-unsigned char *channelsend[NUM_CHANNELS];
+// unsigned char *channels[NUM_CHANNELS];
+// unsigned char *channelsend[NUM_CHANNELS];
+std::array<std::span<unsigned char const>, NUM_CHANNELS> channels{};
 
 // Time/gametic that the channel started playing,
 //  used to determine oldest, which automatically
@@ -260,19 +263,16 @@ int addsfx(int sfxid, int volume, int step, int seperation)
         for (i = 0; i < NUM_CHANNELS; i++)
         {
             // Active, and using the same SFX?
-            if ((channels[i]) && (channelids[i] == sfxid))
+            if (!channels[i].empty() && channelids[i] == sfxid)
             {
-                // Reset.
-                channels[i] = 0;
-                // We are sure that iff,
-                //  there will only be one.
+                channels[i] = {};
                 break;
             }
         }
     }
 
     // Loop all channels to find oldest SFX.
-    for (i = 0; (i < NUM_CHANNELS) && (channels[i]); i++)
+    for (i = 0; (i < NUM_CHANNELS) && !channels[i].empty(); i++)
     {
         if (channelstart[i] < oldest)
         {
@@ -293,9 +293,8 @@ int addsfx(int sfxid, int volume, int step, int seperation)
     // Okay, in the less recent channel,
     //  we will handle the new SFX.
     // Set pointer to raw data.
-    channels[slot] = (unsigned char *)S_sfx[sfxid].data;
+    channels[slot] = {static_cast<unsigned char *>(S_sfx[sfxid].data), static_cast<size_t>(lengths[sfxid])};
     // Set pointer to end of raw data.
-    channelsend[slot] = channels[slot] + lengths[sfxid];
 
     // Reset current handle number, limited to 0..100.
     if (!handlenums)
@@ -543,10 +542,10 @@ void I_UpdateSound(void)
         for (chan = 0; chan < NUM_CHANNELS; chan++)
         {
             // Check channel, if active.
-            if (channels[chan])
+            if (!channels[chan].empty())
             {
                 // Get the raw data from the channel.
-                sample = *channels[chan];
+                sample = channels[chan].front();
                 // Add left and right part
                 //  for this channel (sound)
                 //  to the current data.
@@ -556,13 +555,21 @@ void I_UpdateSound(void)
                 // Increment index ???
                 channelstepremainder[chan] += channelstep[chan];
                 // MSB is next sample???
-                channels[chan] += channelstepremainder[chan] >> 16;
+                auto const advance = static_cast<std::size_t>(channelstepremainder[chan] >> 16);
                 // Limit to LSB???
                 channelstepremainder[chan] &= 65536 - 1;
 
                 // Check whether we are done.
-                if (channels[chan] >= channelsend[chan])
-                    channels[chan] = 0;
+                // if (channels[chan] >= channelsend[chan])
+                //     channels[chan] = 0;
+                if (advance >= channels[chan].size())
+                {
+                    channels[chan] = {};
+                }
+                else
+                {
+                    channels[chan] = channels[chan].subspan(advance);
+                }
             }
         }
 

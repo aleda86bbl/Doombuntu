@@ -33,7 +33,6 @@ extern "C" {
 #ifdef SNDSERV
 #include <stdio.h>
 extern FILE* sndserver;
-extern char* sndserver_filename;
 #endif
 
 #include "doomstat.h"
