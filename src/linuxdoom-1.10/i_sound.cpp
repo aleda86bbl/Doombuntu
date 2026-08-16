@@ -41,13 +41,6 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-// Linux voxware output.
-#include <linux/soundcard.h>
-
-// Timer stuff. Experimental.
-#include <signal.h>
-#include <time.h>
-
 #include "z_zone.h"
 
 #include "i_sound.hpp"
@@ -69,22 +62,15 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include <unordered_map>
 #include <vector>
 
-// Needed for calling the actual sound output.
-#define SAMPLECOUNT 512
-#define NUM_CHANNELS 8
-// It is 2 for 16bit, and 2 for two channels.
-#define BUFMUL 4
-#define MIXBUFFERSIZE (SAMPLECOUNT * BUFMUL)
-constexpr size_t SampleCount = 512;
-constexpr size_t BufMul = 4;
-constexpr size_t MixBufferSize = SampleCount * BufMul;
-constexpr size_t MusicSampleCount = SampleCount * 2;
-
-#define SAMPLERATE 11025 // Hz
-#define SAMPLESIZE 2     // 16bit
+constexpr size_t SAMPLE_COUNT = 512;
+constexpr size_t NUM_CHANNELS = 8;
+constexpr size_t BUFMUL = 4;
+constexpr size_t MIX_BUFFER_SIZE = SAMPLE_COUNT * BUFMUL;
+constexpr size_t MUSIC_SAMPLE_COUNT = SAMPLE_COUNT * 2;
+constexpr size_t SAMPLERATE = 11025;
+constexpr size_t SAMPLE_SIZE = 2;
 
 // UNIX hack, to be removed.
-#ifdef SNDSERV
 // Separate sound server process.
 FILE *sndserver = 0;
 char *sndserver_filename = "./sndserver ";
@@ -103,26 +89,6 @@ struct Song
 
 std::unordered_map<int, Song> songs;
 std::optional<std::reference_wrapper<Song const>> currentSong = std::nullopt;
-int activeSongHandle = -1;
-bool songPaused = false;
-#elif SNDINTR
-
-// Update all 30 millisecs, approx. 30fps synchronized.
-// Linux resolution is allegedly 10 millisecs,
-//  scale is microseconds.
-#define SOUND_INTERVAL 500
-
-// Get the interrupt. Set duration in millisecs.
-int I_SoundSetTimer(int duration_of_tick);
-void I_SoundDelTimer(void);
-#else
-// None?
-#endif
-
-// A quick hack to establish a protocol between
-// synchronous mix buffer updates and asynchronous
-// audio writes. Probably redundant with gametic.
-static int flag = 0;
 
 // The number of internal mixing channels,
 //  the samples calculated for each mixing step,
@@ -134,16 +100,14 @@ static int flag = 0;
 // The actual lengths of all sound effects.
 int lengths[NUMSFX];
 
-// The actual output device.
-int audio_fd;
 
 // The global mixing buffer.
 // Basically, samples from all active internal channels
 //  are modifed and added, and stored in the buffer
 //  that is submitted to the audio device.
-signed short mixbuffer[MIXBUFFERSIZE];
-std::array<short, MixBufferSize> activeMusicBuffer{};
-std::array<short, MixBufferSize> silentMusicBuffer{};
+signed short mixbuffer[MIX_BUFFER_SIZE];
+std::array<short, MIX_BUFFER_SIZE> activeMusicBuffer{};
+std::array<short, MIX_BUFFER_SIZE> silentMusicBuffer{};
 std::span<short const> musicBuffer{};
 
 // The channel step amount...
@@ -243,7 +207,7 @@ void *getsfx(char *sfxname, int *len)
 
     // Pads the sound effect out to the mixing buffer size.
     // The original realloc would interfere with zone memory.
-    paddedsize = ((size - 8 + (SAMPLECOUNT - 1)) / SAMPLECOUNT) * SAMPLECOUNT;
+    paddedsize = ((size - 8 + (SAMPLE_COUNT - 1)) / SAMPLE_COUNT) * SAMPLE_COUNT;
 
     // Allocate from zone memory.
     paddedsfx = (unsigned char *)Z_Malloc(paddedsize + 8, PU_STATIC, 0);
@@ -499,7 +463,7 @@ void I_ProduceSound(void)
         return;
 
     constexpr int bytesPerFrame = 2 * sizeof(short);
-    constexpr int blockBytes = SAMPLECOUNT * bytesPerFrame;
+    constexpr int blockBytes = SAMPLE_COUNT * bytesPerFrame;
     constexpr int targetQueuedBytes = 4 * blockBytes;
 
     for (int queuedBytes = SDL_GetAudioStreamQueued(audioStream.get()); queuedBytes < targetQueuedBytes;
@@ -525,14 +489,10 @@ void I_ProduceSound(void)
 //
 void I_UpdateSound(void)
 {
-#ifdef SNDINTR
-    // Debug. Count buffer misses with interrupt.
-    static int misses = 0;
-#endif
     // continue to play music
     if (currentSong.has_value() && currentSong->get().playing)
     {
-        int const bytesWritten = adl_play(midiPlayer.get(), MusicSampleCount, activeMusicBuffer.data());
+        int const bytesWritten = adl_play(midiPlayer.get(), MUSIC_SAMPLE_COUNT, activeMusicBuffer.data());
         std::fill(activeMusicBuffer.begin() + std::max(bytesWritten, 0), activeMusicBuffer.end(), 0);
         musicBuffer = activeMusicBuffer;
     }
@@ -565,7 +525,7 @@ void I_UpdateSound(void)
 
     // Determine end, for left channel only
     //  (right channel is implicit).
-    leftend = mixbuffer + SAMPLECOUNT * step;
+    leftend = mixbuffer + SAMPLE_COUNT * step;
 
     // Mix sounds into the mixing buffer.
     // Loop over step*SAMPLECOUNT,
@@ -636,24 +596,6 @@ void I_UpdateSound(void)
         rightout += step;
         ++musicSample;
     }
-
-#ifdef SNDINTR
-    // Debug check.
-    if (flag)
-    {
-        misses += flag;
-        flag = 0;
-    }
-
-    if (misses > 10)
-    {
-        fprintf(stderr, "I_SoundUpdate: missed 10 buffer writes\n");
-        misses = 0;
-    }
-
-    // Increment flag for update.
-    flag++;
-#endif
 }
 
 //
@@ -669,7 +611,7 @@ void I_SubmitSound(void)
     if (!audioStream || !mixbuffer)
         return;
 
-    int payloadBytes = SAMPLECOUNT * BUFMUL;
+    int payloadBytes = SAMPLE_COUNT * BUFMUL;
 
     if (!SDL_PutAudioStreamData(audioStream.get(), mixbuffer, payloadBytes))
     {
@@ -720,7 +662,6 @@ void I_InitSound()
     for (int i = 1; i < NUMSFX; i++)
     {
         // Alias? Example is the chaingun sound linked to pistol.
-        std::cout << "loading sound: " << i << "/" << NUMSFX << std::endl;
         if (!S_sfx[i].link)
         {
             // Load data from WAD file.
@@ -737,7 +678,7 @@ void I_InitSound()
     fprintf(stderr, " pre-cached all sound data\n");
 
     // Now initialize mixbuffer with zero.
-    for (int i = 0; i < MIXBUFFERSIZE; i++)
+    for (int i = 0; i < MIX_BUFFER_SIZE; i++)
         mixbuffer[i] = 0;
 
     // Finished initialization.
@@ -751,7 +692,7 @@ void I_InitSound()
 //
 void I_InitMusic(void)
 {
-    midiPlayer.reset(adl_init(11025));
+    midiPlayer.reset(adl_init(SAMPLERATE));
     if (!midiPlayer)
     {
         std::cerr << "adl_init failed: " << adl_errorString() << std::endl;
@@ -819,94 +760,3 @@ int I_QrySongPlaying(int handle)
     return songs.at(handle).looping || songs.at(handle).playing;
 }
 
-//
-// Experimental stuff.
-// A Linux timer interrupt, for asynchronous
-//  sound output.
-// I ripped this out of the Timer class in
-//  our Difference Engine, including a few
-//  SUN remains...
-//
-#ifdef sun
-typedef sigset_t tSigSet;
-#else
-typedef int tSigSet;
-#endif
-
-// We might use SIGVTALRM and ITIMER_VIRTUAL, if the process
-//  time independend timer happens to get lost due to heavy load.
-// SIGALRM and ITIMER_REAL doesn't really work well.
-// There are issues with profiling as well.
-static int /*__itimer_which*/ itimer = ITIMER_REAL;
-
-static int sig = SIGALRM;
-
-// Interrupt handler.
-void I_HandleSoundTimer(int ignore)
-{
-    // Debug.
-    // fprintf( stderr, "%c", '+' ); fflush( stderr );
-
-    // Feed sound device if necesary.
-    if (flag)
-    {
-        // See I_SubmitSound().
-        // Write it to DSP device.
-        write(audio_fd, mixbuffer, SAMPLECOUNT * BUFMUL);
-
-        // Reset flag counter.
-        flag = 0;
-    }
-    else
-        return;
-
-    // UNUSED, but required.
-    ignore = 0;
-    return;
-}
-
-// Get the interrupt. Set duration in millisecs.
-int I_SoundSetTimer(int duration_of_tick)
-{
-    // Needed for gametick clockwork.
-    struct itimerval value;
-    struct itimerval ovalue;
-    struct sigaction act;
-    struct sigaction oact;
-
-    int res;
-
-    // This sets to SA_ONESHOT and SA_NOMASK, thus we can not use it.
-    //     signal( _sig, handle_SIG_TICK );
-
-    // Now we have to change this attribute for repeated calls.
-    act.sa_handler = I_HandleSoundTimer;
-#ifndef sun
-    // ac	t.sa_mask = _sig;
-#endif
-    act.sa_flags = SA_RESTART;
-
-    sigaction(sig, &act, &oact);
-
-    value.it_interval.tv_sec = 0;
-    value.it_interval.tv_usec = duration_of_tick;
-    value.it_value.tv_sec = 0;
-    value.it_value.tv_usec = duration_of_tick;
-
-    // Error is -1.
-    res = setitimer(itimer, &value, &ovalue);
-
-    // Debug.
-    if (res == -1)
-        fprintf(stderr, "I_SoundSetTimer: interrupt n.a.\n");
-
-    return res;
-}
-
-// Remove the interrupt. Set duration to zero.
-void I_SoundDelTimer()
-{
-    // Debug.
-    if (I_SoundSetTimer(0) == -1)
-        fprintf(stderr, "I_SoundDelTimer: failed to remove interrupt. Doh!\n");
-}
