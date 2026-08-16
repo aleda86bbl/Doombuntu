@@ -59,10 +59,28 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "SDL3/SDL.h"
 #include "doomdef.h"
 #include <adlmidi.h>
+#include <array>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <optional>
+#include <span>
 #include <unordered_map>
+#include <vector>
+
+// Needed for calling the actual sound output.
+#define SAMPLECOUNT 512
+#define NUM_CHANNELS 8
+// It is 2 for 16bit, and 2 for two channels.
+#define BUFMUL 4
+#define MIXBUFFERSIZE (SAMPLECOUNT * BUFMUL)
+constexpr size_t SampleCount = 512;
+constexpr size_t BufMul = 4;
+constexpr size_t MixBufferSize = SampleCount * BufMul;
+
+#define SAMPLERATE 11025 // Hz
+#define SAMPLESIZE 2     // 16bit
 
 // UNIX hack, to be removed.
 #ifdef SNDSERV
@@ -76,10 +94,14 @@ UniqueMIDIPlayer midiPlayer = UniqueMIDIPlayer(nullptr, adl_close);
 
 struct Song
 {
-    std::byte *data;
-    size_t size;
+    std::byte *data{nullptr};
+    size_t size{0};
+    bool playing{false};
+    bool looping{false};
 };
+
 std::unordered_map<int, Song> songs;
+std::optional<std::reference_wrapper<Song const> > currentSong = std::nullopt;
 int activeSongHandle = -1;
 bool songPaused = false;
 #elif SNDINTR
@@ -107,14 +129,6 @@ static int flag = 0;
 //  mixing buffer, and the samplerate of the raw data.
 
 // Needed for calling the actual sound output.
-#define SAMPLECOUNT 512
-#define NUM_CHANNELS 8
-// It is 2 for 16bit, and 2 for two channels.
-#define BUFMUL 4
-#define MIXBUFFERSIZE (SAMPLECOUNT * BUFMUL)
-
-#define SAMPLERATE 11025 // Hz
-#define SAMPLESIZE 2     // 16bit
 
 // The actual lengths of all sound effects.
 int lengths[NUMSFX];
@@ -127,7 +141,9 @@ int audio_fd;
 //  are modifed and added, and stored in the buffer
 //  that is submitted to the audio device.
 signed short mixbuffer[MIXBUFFERSIZE];
-signed short musicBuffer[MIXBUFFERSIZE];
+std::array<short, MixBufferSize> activeMusicBuffer{};
+std::array<short, MixBufferSize> silentMusicBuffer{};
+std::span<short const> musicBuffer{};
 
 // The channel step amount...
 unsigned int channelstep[NUM_CHANNELS];
@@ -508,8 +524,16 @@ void I_UpdateSound(void)
     static int misses = 0;
 #endif
     // continue to play music
-    if (midiPlayer)
-        adl_play(midiPlayer.get(), MIXBUFFERSIZE, musicBuffer);
+    if (currentSong.has_value() && currentSong->get().playing)
+    {
+        adl_play(midiPlayer.get(), MIXBUFFERSIZE, activeMusicBuffer.data());    
+        musicBuffer = activeMusicBuffer;
+    }
+    else
+    {
+        musicBuffer = silentMusicBuffer;
+    }
+    
 
     // Mix current sound data.
     // Data, from raw sound, for right and left.
@@ -727,8 +751,10 @@ void I_InitMusic(void)
         std::cerr << "adl_init failed: " << adl_errorString() << std::endl;
     }
 }
+
 void I_ShutdownMusic(void)
 {
+    midiPlayer.reset();
 }
 
 static int looping = 0;
@@ -737,37 +763,28 @@ static int newSongHandle = -1;
 
 void I_PlaySong(int handle, int looping)
 {
-    Song const &currentSong = songs.at(handle);
-    int loadStatus = adl_openData(midiPlayer.get(), currentSong.data, currentSong.size);
-    if (loadStatus < 0)
-    {
-        std::cerr << "Failed adl_openData for song: " << adl_errorString() << std::endl;
-        return;
-    }
-    adl_setLoopEnabled(midiPlayer.get(), looping);
-
-    musicdies = gametic + TICRATE * 30;
+    songs.at(handle).playing = true;
+    songs.at(handle).looping = looping;
+    adl_openData(midiPlayer.get(), songs.at(handle).data, songs.at(handle).size);
+    adl_setLoopEnabled(midiPlayer.get(), songs.at(handle).looping);
+    currentSong = songs.at(handle);
 }
 
 void I_PauseSong(int handle)
 {
-    // UNUSED.
-    handle = 0;
+    songs.at(handle).playing = false;
 }
 
 void I_ResumeSong(int handle)
 {
-    // UNUSED.
-    handle = 0;
+    songs.at(handle).playing = true;
 }
 
 void I_StopSong(int handle)
 {
-    // UNUSED.
-    handle = 0;
-
-    looping = 0;
-    musicdies = 0;
+    songs.at(handle).playing = false;
+    adl_reset(midiPlayer.get());
+    currentSong = std::nullopt;
 }
 
 void I_UnRegisterSong(int handle)
@@ -778,16 +795,14 @@ void I_UnRegisterSong(int handle)
 int I_RegisterSong(void *data, size_t size)
 {
     ++newSongHandle;
-    songs.emplace(newSongHandle, Song({static_cast<std::byte *>(data), size}));
+    songs.emplace(newSongHandle, Song{static_cast<std::byte *>(data), size, false, false});
     return newSongHandle;
 }
 
 // Is the song playing?
 int I_QrySongPlaying(int handle)
 {
-    // UNUSED.
-    handle = 0;
-    return looping || musicdies > gametic;
+    return songs.at(handle).looping || songs.at(handle).playing;
 }
 
 //
