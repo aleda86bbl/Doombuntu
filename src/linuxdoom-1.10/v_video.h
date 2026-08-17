@@ -79,6 +79,11 @@ V_DrawPatch
   int		scrn,
   patch_t*	patch);
 
+void V_DrawPatchRegionScaled(
+    int src_x, int src_y, int src_w, int src_h,
+    int dst_x, int dst_y, int dst_w, int dst_h,
+    int scrn, patch_t *patch);
+
 void
 V_DrawPatchDirect
 ( int		x,
