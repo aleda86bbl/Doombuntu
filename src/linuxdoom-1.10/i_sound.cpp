@@ -52,12 +52,14 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "SDL3/SDL.h"
 #include "doomdef.h"
 #include <adlmidi.h>
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <unordered_map>
 #include <vector>
@@ -96,9 +98,7 @@ std::optional<std::reference_wrapper<Song const>> currentSong = std::nullopt;
 // Needed for calling the actual sound output.
 
 // The actual lengths of all sound effects.
-//int lengths[NUMSFX];
 std::array<int, NUMSFX> lengths{};
-
 
 // The global mixing buffer.
 // Basically, samples from all active internal channels
@@ -110,11 +110,9 @@ std::array<short, MIX_BUFFER_SIZE> silentMusicBuffer{};
 std::span<short const> musicBuffer{};
 
 // The channel step amount...
-//unsigned int channelstep[NUM_CHANNELS];
 std::array<unsigned int, NUM_CHANNELS> channelstep{};
 
 // ... and a 0.16 bit remainder of last step.
-//unsigned int channelstepremainder[NUM_CHANNELS];
 std::array<unsigned int, NUM_CHANNELS> channelstepremainder{};
 
 // The channel data pointers, start and end.
@@ -127,27 +125,27 @@ std::array<std::span<unsigned char const>, NUM_CHANNELS> channels{};
 //  has lowest priority.
 // In case number of active sounds exceeds
 //  available channels.
-int channelstart[NUM_CHANNELS];
+std::array<int, NUM_CHANNELS> channelstart{};
 
 // The sound in channel handles,
 //  determined on registration,
 //  might be used to unregister/stop/modify,
 //  currently unused.
-int channelhandles[NUM_CHANNELS];
+std::array<int, NUM_CHANNELS> channelhandles{};
 
 // SFX id of the playing sound effect.
 // Used to catch duplicates (like chainsaw).
-int channelids[NUM_CHANNELS];
+std::array<int, NUM_CHANNELS> channelids{};
 
 // Pitch to stepping lookup, unused.
-int steptable[256];
+std::array<int, 256> steptable{};
 
 // Volume lookups.
-int vol_lookup[128 * 256];
+std::array<int, 128 * 256> vol_lookup{};
 
 // Hardware left and right channel volume lookup.
-int *channelleftvol_lookup[NUM_CHANNELS];
-int *channelrightvol_lookup[NUM_CHANNELS];
+std::array<std::span<int>, NUM_CHANNELS> channelleftvol_lookup;
+std::array<std::span<int>, NUM_CHANNELS> channelrightvol_lookup;
 
 //
 // Safe ioctl, convenience.
@@ -332,8 +330,9 @@ int addsfx(int sfxid, int volume, int step, int seperation)
 
     // Get the proper lookup table piece
     //  for this volume level???
-    channelleftvol_lookup[slot] = &vol_lookup[leftvol * 256];
-    channelrightvol_lookup[slot] = &vol_lookup[rightvol * 256];
+    std::span<int> volSpanLookup(vol_lookup);
+    channelleftvol_lookup[slot] = volSpanLookup.subspan(leftvol * 256, 256);
+    channelrightvol_lookup[slot] = volSpanLookup.subspan(rightvol * 256, 256);
 
     // Preserve sound SFX id,
     //  e.g. for avoiding duplicates of chainsaw.
@@ -354,31 +353,27 @@ int addsfx(int sfxid, int volume, int step, int seperation)
 //
 void I_SetChannels()
 {
-    // Init internal lookups (raw data, mixing buffer, channels).
-    // This function sets up internal lookups used during
-    //  the mixing process.
-    int i;
-    int j;
-
-    int *steptablemid = steptable + 128;
-
-    // Okay, reset internal mixing channels to zero.
-    /*for (i=0; i<NUM_CHANNELS; i++)
-    {
-      channels[i] = 0;
-    }*/
-
     // This table provides step widths for pitch parameters.
     // I fail to see that this is currently used.
-    for (i = -128; i < 128; i++)
-        steptablemid[i] = (int)(pow(2.0, (i / 64.0)) * 65536.0);
+    for (auto &&[idx, value] : std::views::enumerate(steptable))
+    {
+        int i = static_cast<int>(idx) - 128;
+        value = static_cast<int>(std::pow(2.0, (i / 64.0)) * 65536.0);
+    }
+
+    auto iRange = std::views::iota(0, 128);
+    auto jRange = std::views::iota(0, 256);
+
+    auto grid = std::views::cartesian_product(iRange, jRange);
 
     // Generates volume lookup tables
     //  which also turn the unsigned samples
     //  into signed samples.
-    for (i = 0; i < 128; i++)
-        for (j = 0; j < 256; j++)
-            vol_lookup[i * 256 + j] = (i * (j - 128) * 256) / 127;
+    for (auto &&[coords, value] : std::views::zip(grid, vol_lookup))
+    {
+        auto [i, j] = coords;
+        value = (i * (j - 128) * 256) / 127;
+    }
 }
 
 void I_SetSfxVolume(int volume)
@@ -766,4 +761,3 @@ int I_QrySongPlaying(int handle)
 {
     return songs.at(handle).looping || songs.at(handle).playing;
 }
-
