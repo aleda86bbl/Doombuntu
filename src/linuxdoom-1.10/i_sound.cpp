@@ -109,33 +109,19 @@ std::array<short, MIX_BUFFER_SIZE> activeMusicBuffer{};
 std::array<short, MIX_BUFFER_SIZE> silentMusicBuffer{};
 std::span<short const> musicBuffer{};
 
-// The channel step amount...
-std::array<unsigned int, NUM_CHANNELS> channelstep{};
+struct ChannelType
+{
+    int start{0}; // Time/gametic that the channel started playing, used to determine oldest which automatically has lowest priority.
+    int handle{0}; // determined on registration, might be used to unregister/stop/modify
+    int sfxID{0};  // SFX id of the playing sound effect. Used to catch duplicates (lie chainsaw)
+    unsigned int step{0};  // The channel step amount.
+    unsigned int stepRemainder{0}; // ... and a 0.16 bit remainder of last step.
+    std::span<unsigned char const> sfxData;
+    std::span<int> leftVolLookup;
+    std::span<int> rightVolLookup;
+};
 
-// ... and a 0.16 bit remainder of last step.
-std::array<unsigned int, NUM_CHANNELS> channelstepremainder{};
-
-// The channel data pointers, start and end.
-// unsigned char *channels[NUM_CHANNELS];
-// unsigned char *channelsend[NUM_CHANNELS];
-std::array<std::span<unsigned char const>, NUM_CHANNELS> channels{};
-
-// Time/gametic that the channel started playing,
-//  used to determine oldest, which automatically
-//  has lowest priority.
-// In case number of active sounds exceeds
-//  available channels.
-std::array<int, NUM_CHANNELS> channelstart{};
-
-// The sound in channel handles,
-//  determined on registration,
-//  might be used to unregister/stop/modify,
-//  currently unused.
-std::array<int, NUM_CHANNELS> channelhandles{};
-
-// SFX id of the playing sound effect.
-// Used to catch duplicates (like chainsaw).
-std::array<int, NUM_CHANNELS> channelids{};
+std::array<ChannelType, NUM_CHANNELS> channels;
 
 // Pitch to stepping lookup, unused.
 std::array<int, 256> steptable{};
@@ -238,19 +224,10 @@ void *getsfx(char *sfxname, int *len)
 //  (eight, usually) of internal channels.
 // Returns a handle.
 //
-int addsfx(int sfxid, int volume, int step, int seperation)
+int addsfx(int sfxid, int volume, int step, int separation)
 {
     static unsigned short handlenums = 0;
-
-    int i;
-    int rc = -1;
-
     int oldest = gametic;
-    int oldestnum = 0;
-    int slot;
-
-    int rightvol;
-    int leftvol;
 
     // Chainsaw troubles.
     // Play these sound effects only one at a time.
@@ -258,70 +235,61 @@ int addsfx(int sfxid, int volume, int step, int seperation)
         sfxid == sfx_stnmov || sfxid == sfx_pistol)
     {
         // Loop all channels, check.
-        for (i = 0; i < NUM_CHANNELS; i++)
+        for (auto && channel : channels )
         {
             // Active, and using the same SFX?
-            if (!channels[i].empty() && channelids[i] == sfxid)
+            if (!channel.sfxData.empty() && channel.sfxID == sfxid)
             {
-                channels[i] = {};
+                channel.sfxData = {};
                 break;
             }
         }
     }
 
     // Loop all channels to find oldest SFX.
-    for (i = 0; (i < NUM_CHANNELS) && !channels[i].empty(); i++)
+    std::reference_wrapper<ChannelType> oldestChannel = channels.front();
+    for (auto & channel : channels)
     {
-        if (channelstart[i] < oldest)
+        if (channel.sfxData.empty())
         {
-            oldestnum = i;
-            oldest = channelstart[i];
+            break;
+        }
+        if (channel.start < oldest)
+        {
+            oldestChannel = channel;
+            oldest = channel.start;
         }
     }
-
-    // Tales from the cryptic.
-    // If we found a channel, fine.
-    // If not, we simply overwrite the first one, 0.
-    // Probably only happens at startup.
-    if (i == NUM_CHANNELS)
-        slot = oldestnum;
-    else
-        slot = i;
-
     // Okay, in the less recent channel,
     //  we will handle the new SFX.
     // Set pointer to raw data.
-    channels[slot] = {static_cast<unsigned char *>(S_sfx[sfxid].data), static_cast<size_t>(lengths[sfxid])};
-    // Set pointer to end of raw data.
+    oldestChannel.get().sfxData = {static_cast<unsigned char *>(S_sfx[sfxid].data), static_cast<size_t>(lengths[sfxid])};
 
     // Reset current handle number, limited to 0..100.
     if (!handlenums)
         handlenums = 100;
 
-    // Assign current handle number.
     // Preserved so sounds could be stopped (unused).
-    channelhandles[slot] = rc = handlenums++;
-
+    int rc;
+    oldestChannel.get().handle = rc = handlenums++;
     // Set stepping???
     // Kinda getting the impression this is never used.
-    channelstep[slot] = step;
+    oldestChannel.get().step = step;
     // ???
-    channelstepremainder[slot] = 0;
+    oldestChannel.get().stepRemainder = 0;
     // Should be gametic, I presume.
-    channelstart[slot] = gametic;
+    oldestChannel.get().start = gametic;
 
     // Separation, that is, orientation/stereo.
     //  range is: 1 - 256
-    seperation += 1;
-
+    separation += 1;
     // Per left/right channel.
     //  x^2 seperation,
     //  adjust volume properly.
-    leftvol = volume - ((volume * seperation * seperation) >> 16); ///(256*256);
-    seperation = seperation - 257;
-    rightvol = volume - ((volume * seperation * seperation) >> 16);
+    int leftvol = volume - ((volume * separation * separation) >> 16); ///(256*256);
+    separation = separation - 257;
+    int rightvol = volume - ((volume * separation * separation) >> 16);
 
-    // Sanity check, clamp volume.
     if (rightvol < 0 || rightvol > 127)
         I_Error("rightvol out of bounds");
 
@@ -331,12 +299,12 @@ int addsfx(int sfxid, int volume, int step, int seperation)
     // Get the proper lookup table piece
     //  for this volume level???
     std::span<int> volSpanLookup(vol_lookup);
-    channelleftvol_lookup[slot] = volSpanLookup.subspan(leftvol * 256, 256);
-    channelrightvol_lookup[slot] = volSpanLookup.subspan(rightvol * 256, 256);
-
+    oldestChannel.get().leftVolLookup = volSpanLookup.subspan(leftvol * 256, 256);
+    oldestChannel.get().rightVolLookup = volSpanLookup.subspan(rightvol * 256, 256);
+    
     // Preserve sound SFX id,
     //  e.g. for avoiding duplicates of chainsaw.
-    channelids[slot] = sfxid;
+    oldestChannel.get().sfxID = sfxid;
 
     // You tell me.
     return rc;
@@ -534,36 +502,27 @@ void I_UpdateSound(void)
         // Love thy L2 chache - made this a loop.
         // Now more channels could be set at compile time
         //  as well. Thus loop those  channels.
-        for (chan = 0; chan < NUM_CHANNELS; chan++)
+        for (auto & channel : channels)
         {
-            // Check channel, if active.
-            if (!channels[chan].empty())
+            if (!channel.sfxData.empty())
             {
-                // Get the raw data from the channel.
-                sample = channels[chan].front();
-                // Add left and right part
-                //  for this channel (sound)
-                //  to the current data.
-                // Adjust volume accordingly.
-                dl += channelleftvol_lookup[chan][sample];
-                dr += channelrightvol_lookup[chan][sample];
+                sample = channel.sfxData.front();
+                dl += channel.leftVolLookup[sample];
+                dr += channel.rightVolLookup[sample];
                 // Increment index ???
-                channelstepremainder[chan] += channelstep[chan];
+                channel.stepRemainder += channel.step;
                 // MSB is next sample???
-                auto const advance = static_cast<std::size_t>(channelstepremainder[chan] >> 16);
+                auto const advance = static_cast<std::size_t>(channel.stepRemainder >> 16);
                 // Limit to LSB???
-                channelstepremainder[chan] &= 65536 - 1;
-
+                channel.stepRemainder &= 65536 - 1;
                 // Check whether we are done.
-                // if (channels[chan] >= channelsend[chan])
-                //     channels[chan] = 0;
-                if (advance >= channels[chan].size())
+                if (advance >= channel.sfxData.size())
                 {
-                    channels[chan] = {};
+                    channel.sfxData = {};
                 }
                 else
                 {
-                    channels[chan] = channels[chan].subspan(advance);
+                    channel.sfxData = channel.sfxData.subspan(advance);
                 }
             }
         }
