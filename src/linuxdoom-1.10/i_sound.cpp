@@ -64,6 +64,9 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <string_view>
+#include <string>
+#include <format>
 
 constexpr size_t SAMPLE_COUNT = 512;
 constexpr size_t NUM_CHANNELS = 8;
@@ -105,7 +108,7 @@ std::array<int, NUMSFX> lengths{};
 // Basically, samples from all active internal channels
 //  are modifed and added, and stored in the buffer
 //  that is submitted to the audio device.
-signed short mixbuffer[MIX_BUFFER_SIZE];
+std::array<short, MIX_BUFFER_SIZE> mixBuffer{};
 std::array<short, MIX_BUFFER_SIZE> activeMusicBuffer{};
 std::array<short, MIX_BUFFER_SIZE> silentMusicBuffer{};
 std::span<short const> musicBuffer{};
@@ -154,19 +157,18 @@ void myioctl(int fd, int command, int *arg)
 // This function loads the sound data from the WAD lump,
 //  for single sound.
 //
-void *getsfx(char *sfxname, int *len)
+void *getsfx(std::string_view sfxname, int &len)
 {
     unsigned char *sfx;
     unsigned char *paddedsfx;
     int i;
     int size;
     int paddedsize;
-    char name[20];
     int sfxlump;
 
     // Get the sound data from the WAD, allocate lump
     //  in zone memory.
-    sprintf(name, "ds%s", sfxname);
+    std::string name = std::format("ds{}", sfxname);
 
     // Now, there is a severe problem with the
     //  sound handling, in it is not (yet/anymore)
@@ -178,10 +180,10 @@ void *getsfx(char *sfxname, int *len)
     // I do not do runtime patches to that
     //  variable. Instead, we will use a
     //  default sound for replacement.
-    if (W_CheckNumForName(name) == -1)
+    if (W_CheckNumForName(name.c_str()) == -1)
         sfxlump = W_GetNumForName("dspistol");
     else
-        sfxlump = W_GetNumForName(name);
+        sfxlump = W_GetNumForName(name.c_str());
 
     size = W_LumpLength(sfxlump);
 
@@ -191,14 +193,14 @@ void *getsfx(char *sfxname, int *len)
     //	     sfxname, sfxlump, size );
     // fflush( stderr );
 
-    sfx = (unsigned char *)W_CacheLumpNum(sfxlump, PU_STATIC);
+    sfx = static_cast<unsigned char *>(W_CacheLumpNum(sfxlump, PU_STATIC));
 
     // Pads the sound effect out to the mixing buffer size.
     // The original realloc would interfere with zone memory.
     paddedsize = ((size - 8 + (SAMPLE_COUNT - 1)) / SAMPLE_COUNT) * SAMPLE_COUNT;
 
     // Allocate from zone memory.
-    paddedsfx = (unsigned char *)Z_Malloc(paddedsize + 8, PU_STATIC, 0);
+    paddedsfx = static_cast<unsigned char *>(Z_Malloc(paddedsize + 8, PU_STATIC, 0));
     // ddt: (unsigned char *) realloc(sfx, paddedsize+8);
     // This should interfere with zone memory handling,
     //  which does not kick in in the soundserver.
@@ -212,10 +214,10 @@ void *getsfx(char *sfxname, int *len)
     Z_Free(sfx);
 
     // Preserve padded length.
-    *len = paddedsize;
+    len = paddedsize;
 
     // Return allocated padded data.
-    return (void *)(paddedsfx + 8);
+    return static_cast<void *>(paddedsfx + 8);
 }
 
 //
@@ -475,7 +477,7 @@ void I_UpdateSound(void)
     //  that is 512 values for two channels.
     auto musicAndMixBufferViews = std::views::zip(
         musicBuffer.first(MUSIC_SAMPLE_COUNT) | std::views::adjacent<2> | std::views::stride(2),
-        std::span{mixbuffer}.first(MUSIC_SAMPLE_COUNT) | std::views::adjacent<2> | std::views::stride(2)
+        std::span{mixBuffer}.first(MUSIC_SAMPLE_COUNT) | std::views::adjacent<2> | std::views::stride(2)
     );
     
     for (auto [musicPair, mixPair] : musicAndMixBufferViews) 
@@ -534,12 +536,13 @@ void I_UpdateSound(void)
 //
 void I_SubmitSound(void)
 {
-    if (!audioStream || !mixbuffer)
+    bool hasData = std::ranges::any_of(mixBuffer, [](short x) { return x != 0; });
+    if (!audioStream || !hasData)
         return;
 
     int payloadBytes = SAMPLE_COUNT * BUFMUL;
 
-    if (!SDL_PutAudioStreamData(audioStream.get(), mixbuffer, payloadBytes))
+    if (!SDL_PutAudioStreamData(audioStream.get(), mixBuffer.data(), payloadBytes))
     {
         std::cerr << "Buffer submit failed: " << SDL_GetError() << std::endl;
     }
@@ -591,7 +594,7 @@ void I_InitSound()
         if (!S_sfx[i].link)
         {
             // Load data from WAD file.
-            S_sfx[i].data = getsfx(S_sfx[i].name, &lengths[i]);
+            S_sfx[i].data = getsfx(S_sfx[i].name, lengths[i]);
         }
         else
         {
@@ -605,7 +608,7 @@ void I_InitSound()
 
     // Now initialize mixbuffer with zero.
     for (int i = 0; i < MIX_BUFFER_SIZE; i++)
-        mixbuffer[i] = 0;
+        mixBuffer[i] = 0;
 
     // Finished initialization.
     fprintf(stderr, "I_InitSound: sound module ready\n");

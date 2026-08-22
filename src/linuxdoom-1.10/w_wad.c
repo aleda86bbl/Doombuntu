@@ -348,7 +348,7 @@ int W_NumLumps (void)
 // Returns -1 if name not found.
 //
 
-int W_CheckNumForName (char* name)
+int W_CheckNumForName (char const * name)
 {
     union {
 	char	s[9];
@@ -396,7 +396,7 @@ int W_CheckNumForName (char* name)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (char* name)
+int W_GetNumForName (char const* name)
 {
     int	i;
 
@@ -506,7 +506,7 @@ W_CacheLumpNum
 //
 void*
 W_CacheLumpName
-( char*		name,
+( char const*		name,
   int		tag )
 {
     return W_CacheLumpNum (W_GetNumForName(name), tag);
