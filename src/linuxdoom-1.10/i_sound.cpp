@@ -63,6 +63,7 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include <span>
 #include <unordered_map>
 #include <vector>
+#include <cstdint>
 
 constexpr size_t SAMPLE_COUNT = 512;
 constexpr size_t NUM_CHANNELS = 8;
@@ -247,23 +248,24 @@ int addsfx(int sfxid, int volume, int step, int separation)
     }
 
     // Loop all channels to find oldest SFX.
-    std::reference_wrapper<ChannelType> oldestChannel = channels.front();
+    std::reference_wrapper<ChannelType> targetChannel = channels.front();
     for (auto & channel : channels)
     {
         if (channel.sfxData.empty())
         {
+            targetChannel = channel;
             break;
         }
         if (channel.start < oldest)
         {
-            oldestChannel = channel;
+            targetChannel = channel;
             oldest = channel.start;
         }
     }
     // Okay, in the less recent channel,
     //  we will handle the new SFX.
     // Set pointer to raw data.
-    oldestChannel.get().sfxData = {static_cast<unsigned char *>(S_sfx[sfxid].data), static_cast<size_t>(lengths[sfxid])};
+    targetChannel.get().sfxData = {static_cast<unsigned char *>(S_sfx[sfxid].data), static_cast<size_t>(lengths[sfxid])};
 
     // Reset current handle number, limited to 0..100.
     if (!handlenums)
@@ -271,14 +273,14 @@ int addsfx(int sfxid, int volume, int step, int separation)
 
     // Preserved so sounds could be stopped (unused).
     int rc;
-    oldestChannel.get().handle = rc = handlenums++;
+    targetChannel.get().handle = rc = handlenums++;
     // Set stepping???
     // Kinda getting the impression this is never used.
-    oldestChannel.get().step = step;
+    targetChannel.get().step = step;
     // ???
-    oldestChannel.get().stepRemainder = 0;
+    targetChannel.get().stepRemainder = 0;
     // Should be gametic, I presume.
-    oldestChannel.get().start = gametic;
+    targetChannel.get().start = gametic;
 
     // Separation, that is, orientation/stereo.
     //  range is: 1 - 256
@@ -299,12 +301,12 @@ int addsfx(int sfxid, int volume, int step, int separation)
     // Get the proper lookup table piece
     //  for this volume level???
     std::span<int> volSpanLookup(vol_lookup);
-    oldestChannel.get().leftVolLookup = volSpanLookup.subspan(leftvol * 256, 256);
-    oldestChannel.get().rightVolLookup = volSpanLookup.subspan(rightvol * 256, 256);
+    targetChannel.get().leftVolLookup = volSpanLookup.subspan(leftvol * 256, 256);
+    targetChannel.get().rightVolLookup = volSpanLookup.subspan(rightvol * 256, 256);
     
     // Preserve sound SFX id,
     //  e.g. for avoiding duplicates of chainsaw.
-    oldestChannel.get().sfxID = sfxid;
+    targetChannel.get().sfxID = sfxid;
 
     // You tell me.
     return rc;
@@ -465,40 +467,22 @@ void I_UpdateSound(void)
 
     // Mix current sound data.
     // Data, from raw sound, for right and left.
-    unsigned int sample;
-    int dl;
-    int dr;
-
-    // Pointers in global mixbuffer, left, right, end.
-    signed short *leftout;
-    signed short *rightout;
-    signed short *leftend;
-    // Step in mixbuffer, left and right, thus two.
-    int step;
-
-    // Mixing channel index.
-    int chan;
-
     // Left and right channel
-    //  are in global mixbuffer, alternating.
-    leftout = mixbuffer;
-    rightout = mixbuffer + 1;
-    step = 2;
-
-    // Determine end, for left channel only
-    //  (right channel is implicit).
-    leftend = mixbuffer + SAMPLE_COUNT * step;
-
+    // are in global mixbuffer, alternating.
+    
     // Mix sounds into the mixing buffer.
     // Loop over step*SAMPLECOUNT,
     //  that is 512 values for two channels.
-    int musicSample = 0;
-    while (leftout != leftend)
+    auto musicAndMixBufferViews = std::views::zip(
+        musicBuffer.first(MUSIC_SAMPLE_COUNT) | std::views::adjacent<2> | std::views::stride(2),
+        std::span{mixbuffer}.first(MUSIC_SAMPLE_COUNT) | std::views::adjacent<2> | std::views::stride(2)
+    );
+    
+    for (auto [musicPair, mixPair] : musicAndMixBufferViews) 
     {
-        // Reset left/right value.
-        dl = 0;
-        dr = 0;
-
+        int dl = 0;
+        int dr = 0;
+        
         // Love thy L2 chache - made this a loop.
         // Now more channels could be set at compile time
         //  as well. Thus loop those  channels.
@@ -506,7 +490,7 @@ void I_UpdateSound(void)
         {
             if (!channel.sfxData.empty())
             {
-                sample = channel.sfxData.front();
+                unsigned int sample = channel.sfxData.front();
                 dl += channel.leftVolLookup[sample];
                 dr += channel.rightVolLookup[sample];
                 // Increment index ???
@@ -528,34 +512,15 @@ void I_UpdateSound(void)
         }
 
         int const musicGain = snd_MusicVolume;
-        dl += (musicBuffer[musicSample * 2] * musicGain) / 127;
-        dr += (musicBuffer[musicSample * 2 + 1] * musicGain) / 127;
+        auto [musicBufferL, musicBufferR] = musicPair;
+        dl += (musicBufferL * musicGain) / 127;
+        dr += (musicBufferR * musicGain) / 127;
 
+        auto [mixBufferL, mixBufferR] = mixPair;
         // Clamp to range. Left hardware channel.
-        // Has been char instead of short.
-        // if (dl > 127) *leftout = 127;
-        // else if (dl < -128) *leftout = -128;
-        // else *leftout = dl;
-
-        if (dl > 0x7fff)
-            *leftout = 0x7fff;
-        else if (dl < -0x8000)
-            *leftout = -0x8000;
-        else
-            *leftout = dl;
-
-        // Same for right hardware channel.
-        if (dr > 0x7fff)
-            *rightout = 0x7fff;
-        else if (dr < -0x8000)
-            *rightout = -0x8000;
-        else
-            *rightout = dr;
-
-        // Increment current pointers in mixbuffer.
-        leftout += step;
-        rightout += step;
-        ++musicSample;
+        // Has been char instead of short.    
+        mixBufferL = std::clamp(dl, -0x8000, 0x7fff);
+        mixBufferR = std::clamp(dr, -0x8000, 0x7fff);
     }
 }
 
