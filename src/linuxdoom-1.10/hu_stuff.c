@@ -33,7 +33,7 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 
 #include "hu_stuff.h"
 #include "hu_lib.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "s_sound.h"
 

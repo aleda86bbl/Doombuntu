@@ -34,7 +34,7 @@ rcsid[] = "$Id: r_data.c,v 1.4 1997/02/03 16:47:55 b1 Exp $";
 
 #include "m_swap.h"
 
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "doomdef.h"
 #include "r_local.h"
@@ -455,7 +455,7 @@ void R_InitTextures (void)
     for (i=0 ; i<nummappatches ; i++)
     {
 	strncpy (name,name_p+i*8, 8);
-	patchlookup[i] = W_CheckNumForName (name);
+	patchlookup[i] = W_CheckNumForNameC (name);
     }
     Z_Free (names);
     
@@ -464,14 +464,14 @@ void R_InitTextures (void)
     //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
     maptex = maptex1 = W_CacheLumpName ("TEXTURE1", PU_STATIC);
     numtextures1 = LONG(*maptex);
-    maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
+    maxoff = W_LumpLength (W_GetNumForNameC ("TEXTURE1"));
     directory = maptex+1;
 	
-    if (W_CheckNumForName ("TEXTURE2") != -1)
+    if (W_CheckNumForNameC ("TEXTURE2") != -1)
     {
 	maptex2 = W_CacheLumpName ("TEXTURE2", PU_STATIC);
 	numtextures2 = LONG(*maptex2);
-	maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
+	maxoff2 = W_LumpLength (W_GetNumForNameC ("TEXTURE2"));
     }
     else
     {
@@ -492,8 +492,8 @@ void R_InitTextures (void)
     totalwidth = 0;
     
     //	Really complex printing shit...
-    temp1 = W_GetNumForName ("S_START");  // P_???????
-    temp2 = W_GetNumForName ("S_END") - 1;
+    temp1 = W_GetNumForNameC ("S_START");  // P_???????
+    temp2 = W_GetNumForNameC ("S_END") - 1;
     temp3 = ((temp2-temp1+63)/64) + ((numtextures+63)/64);
     printf("[");
     for (i = 0; i < temp3; i++)
@@ -584,8 +584,8 @@ void R_InitFlats (void)
 {
     int		i;
 	
-    firstflat = W_GetNumForName ("F_START") + 1;
-    lastflat = W_GetNumForName ("F_END") - 1;
+    firstflat = W_GetNumForNameC ("F_START") + 1;
+    lastflat = W_GetNumForNameC ("F_END") - 1;
     numflats = lastflat - firstflat + 1;
 	
     // Create translation table for global animation.
@@ -607,8 +607,8 @@ void R_InitSpriteLumps (void)
     int		i;
     patch_t	*patch;
 	
-    firstspritelump = W_GetNumForName ("S_START") + 1;
-    lastspritelump = W_GetNumForName ("S_END") - 1;
+    firstspritelump = W_GetNumForNameC ("S_START") + 1;
+    lastspritelump = W_GetNumForNameC ("S_END") - 1;
     
     numspritelumps = lastspritelump - firstspritelump + 1;
     spritewidth = Z_Malloc (numspritelumps*4, PU_STATIC, 0);
@@ -638,7 +638,7 @@ void R_InitColormaps (void)
     
     // Load in the light tables, 
     //  256 byte align tables.
-    lump = W_GetNumForName("COLORMAP"); 
+    lump = W_GetNumForNameC("COLORMAP"); 
     length = W_LumpLength (lump) + 255; 
     colormaps = Z_Malloc (length, PU_STATIC, 0); 
     colormaps = (byte *)( ((intptr_t)colormaps + 255)&~0xff); 
@@ -676,7 +676,7 @@ int R_FlatNumForName (char* name)
     int		i;
     char	namet[9];
 
-    i = W_CheckNumForName (name);
+    i = W_CheckNumForNameC (name);
 
     if (i == -1)
     {
@@ -777,7 +777,7 @@ void R_PrecacheLevel (void)
 	if (flatpresent[i])
 	{
 	    lump = firstflat + i;
-	    flatmemory += lumpinfo[lump].size;
+	    flatmemory += W_LumpLength(lump);
 	    W_CacheLumpNum(lump, PU_CACHE);
 	}
     }
@@ -812,7 +812,7 @@ void R_PrecacheLevel (void)
 	for (j=0 ; j<texture->patchcount ; j++)
 	{
 	    lump = texture->patches[j].patch;
-	    texturememory += lumpinfo[lump].size;
+	    texturememory += W_LumpLength(lump);
 	    W_CacheLumpNum(lump , PU_CACHE);
 	}
     }
@@ -839,7 +839,7 @@ void R_PrecacheLevel (void)
 	    for (k=0 ; k<8 ; k++)
 	    {
 		lump = firstspritelump + sf->lump[k];
-		spritememory += lumpinfo[lump].size;
+		spritememory += W_LumpLength(lump);
 		W_CacheLumpNum(lump , PU_CACHE);
 	    }
 	}

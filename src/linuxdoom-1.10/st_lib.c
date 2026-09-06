@@ -36,7 +36,7 @@ rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 
 #include "i_system.h"
 
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "st_stuff.h"
 #include "st_lib.h"

@@ -47,7 +47,7 @@ static const char rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_misc.hpp"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "SDL3/SDL.h"
 #include "doomdef.h"
@@ -181,9 +181,9 @@ void *getsfx(std::string_view sfxname, int &len)
     //  variable. Instead, we will use a
     //  default sound for replacement.
     if (W_CheckNumForName(name.c_str()) == -1)
-        sfxlump = W_GetNumForName("dspistol");
+        sfxlump = W_GetNumForName(std::string_view{"dspistol"});
     else
-        sfxlump = W_GetNumForName(name.c_str());
+        sfxlump = W_GetNumForName(name);
 
     size = W_LumpLength(sfxlump);
 
@@ -375,7 +375,7 @@ int I_GetSfxLumpNum(sfxinfo_t *sfx)
 {
     char namebuf[9];
     sprintf(namebuf, "ds%s", sfx->name);
-    return W_GetNumForName(namebuf);
+    return W_GetNumForName(std::string_view{namebuf});
 }
 
 //

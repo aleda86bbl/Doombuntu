@@ -52,7 +52,7 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 // Needs access to LFB.
 #include "v_video.h"
 
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "p_local.h" 
 
@@ -1010,7 +1010,7 @@ void G_SecretExitLevel (void)
 { 
     // IF NO WOLF3D LEVELS, NO SECRET EXIT!
     if ( (gamemode == commercial)
-      && (W_CheckNumForName("map31")<0))
+      && (W_CheckNumForNameC("map31")<0))
 	secretexit = false;
     else
 	secretexit = true; 

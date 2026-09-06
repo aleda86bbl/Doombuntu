@@ -32,7 +32,7 @@ rcsid[] = "$Id: f_finale.c,v 1.5 1997/02/03 21:26:34 b1 Exp $";
 #include "m_swap.h"
 #include "z_zone.h"
 #include "v_video.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 #include "s_sound.h"
 
 // Data.

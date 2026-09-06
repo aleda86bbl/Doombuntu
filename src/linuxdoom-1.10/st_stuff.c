@@ -33,7 +33,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #include "i_video.hpp"
 #include "z_zone.h"
 #include "m_random.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "doomdef.h"
 
@@ -1201,7 +1201,7 @@ void ST_loadGraphics(void)
 
 void ST_loadData(void)
 {
-    lu_palette = W_GetNumForName ("PLAYPAL");
+    lu_palette = W_GetNumForNameC ("PLAYPAL");
     ST_loadGraphics();
 }
 

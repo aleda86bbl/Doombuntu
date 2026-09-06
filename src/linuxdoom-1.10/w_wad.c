@@ -46,7 +46,7 @@ rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 #ifdef __GNUG__
 #pragma implementation "w_wad.h"
 #endif
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 
 
@@ -348,7 +348,7 @@ int W_NumLumps (void)
 // Returns -1 if name not found.
 //
 
-int W_CheckNumForName (char const * name)
+int W_CheckNumForNameC (char const * name)
 {
     union {
 	char	s[9];

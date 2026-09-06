@@ -31,7 +31,7 @@ rcsid[] = "$Id: r_plane.c,v 1.4 1997/02/03 16:47:55 b1 Exp $";
 
 #include "i_system.h"
 #include "z_zone.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "doomdef.h"
 #include "doomstat.h"

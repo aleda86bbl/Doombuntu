@@ -49,7 +49,7 @@ static const char rcsid[] = "$Id: d_main.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
 
 #include "z_zone.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 #include "s_sound.h"
 #include "v_video.h"
 
@@ -164,7 +164,7 @@ void D_ProcessEvents (void)
 	
     // IF STORE DEMO, DO NOT ACCEPT INPUT
     if ( ( gamemode == commercial )
-	 && (W_CheckNumForName("map01")<0) )
+	 && (W_CheckNumForNameC("map01")<0) )
       return;
 	
     for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
@@ -1011,7 +1011,7 @@ void D_DoomMain (void)
     Z_Init ();
 
     printf ("W_Init: Init WADfiles.\n");
-    W_InitMultipleFiles (wadfiles);
+    W_InitMultipleFilesC (wadfiles);
     
 
     // Check for -file in shareware
@@ -1035,7 +1035,7 @@ void D_DoomMain (void)
 	// but w/o all the lumps of the registered version. 
 	if (gamemode == registered)
 	    for (i = 0;i < 23; i++)
-		if (W_CheckNumForName(name[i])<0)
+		if (W_CheckNumForNameC(name[i])<0)
 		    I_Error("\nThis is not the registered version.");
     }
     

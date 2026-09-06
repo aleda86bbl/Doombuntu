@@ -36,7 +36,7 @@ rcsid[] = "$Id: p_setup.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 #include "g_game.h"
 
 #include "i_system.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "doomdef.h"
 #include "p_local.h"
@@ -641,7 +641,7 @@ P_SetupLevel
 	lumpname[4] = 0;
     }
 
-    lumpnum = W_GetNumForName (lumpname);
+    lumpnum = W_GetNumForNameC (lumpname);
 	
     leveltime = 0;
 	

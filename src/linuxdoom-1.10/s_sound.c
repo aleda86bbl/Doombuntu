@@ -36,7 +36,7 @@ rcsid[] = "$Id: s_sound.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 
 #include "z_zone.h"
 #include "m_random.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "doomdef.h"
 #include "p_local.h"
@@ -672,7 +672,7 @@ S_ChangeMusic
     if (!music->lumpnum)
     {
 	sprintf(namebuf, "d_%s", music->name);
-	music->lumpnum = W_GetNumForName(namebuf);
+	music->lumpnum = W_GetNumForNameC(namebuf);
     }
 
     // load & register it

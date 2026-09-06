@@ -55,7 +55,7 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "i_sound.h"
 #include "m_argv.h"
 #include "m_misc.hpp"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "doomdef.h"
 
@@ -210,10 +210,10 @@ getsfx
     // I do not do runtime patches to that
     //  variable. Instead, we will use a
     //  default sound for replacement.
-    if ( W_CheckNumForName(name) == -1 )
-      sfxlump = W_GetNumForName("dspistol");
+    if ( W_CheckNumForNameC(name) == -1 )
+      sfxlump = W_GetNumForNameC("dspistol");
     else
-      sfxlump = W_GetNumForName(name);
+      sfxlump = W_GetNumForNameC(name);
     
     size = W_LumpLength( sfxlump );
 

@@ -37,7 +37,7 @@ rcsid[] = "$Id: p_spec.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 #include "z_zone.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "w_wad.h"
+#include "w_wad.hpp"
 
 #include "r_local.h"
 #include "p_local.h"
@@ -165,7 +165,7 @@ void P_InitPicAnims (void)
 	}
 	else
 	{
-	    if (W_CheckNumForName(animdefs[i].startname) == -1)
+	    if (W_CheckNumForNameC(animdefs[i].startname) == -1)
 		continue;
 
 	    lastanim->picnum = R_FlatNumForName (animdefs[i].endname);
@@ -1243,7 +1243,7 @@ void P_SpawnSpecials (void)
     int		episode;
 
     episode = 1;
-    if (W_CheckNumForName("texture2") >= 0)
+    if (W_CheckNumForNameC("texture2") >= 0)
 	episode = 2;
 
     

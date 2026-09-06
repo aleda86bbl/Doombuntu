@@ -92,7 +92,7 @@ target_sources(Doombuntu
         src/linuxdoom-1.10/st_stuff.c
         src/linuxdoom-1.10/tables.c
         src/linuxdoom-1.10/v_video.c
-        src/linuxdoom-1.10/w_wad.c
+        src/linuxdoom-1.10/w_wad.cpp
         src/linuxdoom-1.10/wi_stuff.c
         src/linuxdoom-1.10/z_zone.c
 )
