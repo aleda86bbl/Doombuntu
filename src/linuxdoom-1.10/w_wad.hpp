@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
-#include <fstream>
 #include <stdint.h>
 #include <string>
 
@@ -72,38 +71,6 @@ extern "C"
 #ifdef __GNUG__
 #pragma interface
 #endif
-
-    //
-    // TYPES
-    //
-    typedef struct
-    {
-        // Should be "IWAD" or "PWAD".
-        char identification[4];
-        int numlumps;
-        int infotableofs;
-
-    } wadinfo_t;
-
-    /*typedef struct
-    {
-        int			filepos;
-        int			size;
-        char		name[8];
-
-    } filelump_t;*/
-
-    //
-    // WADFILE I/O related stuff.
-    //
-    typedef struct
-    {
-        char name[8];
-        int handle;
-        int position;
-        int size;
-    } lumpinfo_t;
-
 
     void W_InitMultipleFilesC(char **filenames);
     void W_Reload(void);
